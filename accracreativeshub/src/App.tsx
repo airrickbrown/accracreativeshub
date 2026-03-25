@@ -14,6 +14,28 @@ import DesignerDashboard  from './components/DesignerDashboard'
 import DesignerSignup     from './components/DesignerSignup'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 
+// Test connection
+import { useEffect } from "react"
+import { supabase } from "./lib/supabase"
+
+function App() {
+
+  useEffect(() => {
+    const test = async () => {
+      const { data, error } = await supabase.from('test').select('*')
+      console.log(data, error)
+    }
+
+    test()
+  }, [])
+
+  return (
+    <div>App running</div>
+  )
+}
+
+export default App
+
 // ── Smooth scroll to a section by id ──
 const scrollTo = (id: string) => {
   const el = document.getElementById(id)
