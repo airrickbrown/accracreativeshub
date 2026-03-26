@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
-
 import Nav                from './components/Nav'
 import DesignerCard       from './components/DesignerCard'
 import DesignerProfile    from './components/DesignerProfile'
@@ -13,7 +12,12 @@ import AdminPanel         from './components/AdminPanel'
 import DesignerDashboard  from './components/DesignerDashboard'
 import DesignerSignup     from './components/DesignerSignup'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
+// @ts-ignore
 import { supabase } from './lib/supabase'
+import AuthModal from './components/AuthModal'
+import { useAuth } from './AuthContext'
+
+
 
 // ── Smooth scroll to a section by id ──
 const scrollTo = (id: string) => {
@@ -45,6 +49,8 @@ export default function App() {
   const [showSignup, setShowSignup] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState<any>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const { user, profile, signOut } = useAuth()
 
   useEffect(() => {
     setTimeout(() => setHeroIn(true), 100)
@@ -90,6 +96,7 @@ export default function App() {
     onMarketplace: () => scrollTo('marketplace'),
     onHowItWorks: () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
+    onAuth: () => setShowAuth(true),
   }
 
   return (
@@ -124,6 +131,7 @@ export default function App() {
       `}</style>
 
       {showSignup && <DesignerSignup onClose={() => setShowSignup(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
       {showAnalytics && (
         <DesignerDashboard

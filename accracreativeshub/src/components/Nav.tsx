@@ -11,10 +11,11 @@ interface NavProps {
   onMarketplace: () => void
   onHowItWorks:  () => void
   onForDesigners:() => void
+  onAuth:        () => void
   scrolled:      boolean
 }
 
-export default function Nav({ onAdmin, onSignup, onMessages, onMarketplace, onHowItWorks, onForDesigners, scrolled }: NavProps) {
+export default function Nav({ onAdmin, onSignup, onMessages, onMarketplace, onHowItWorks, onForDesigners, onAuth, scrolled }: NavProps) {
   const links = [
     { label: 'Marketplace',  fn: onMarketplace   },
     { label: 'Designers',    fn: onMarketplace   },
@@ -51,6 +52,12 @@ export default function Nav({ onAdmin, onSignup, onMessages, onMarketplace, onHo
 
         {/* Right buttons */}
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <button onClick={onAuth}
+            style={{ background:'none', border:`1px solid ${S.borderFaint}`, fontFamily:S.headline, fontSize:11, letterSpacing:'0.15em', textTransform:'uppercase', color:S.textMuted, cursor:'pointer', padding:'8px 16px', transition:'all 0.2s' }}
+            onMouseEnter={(e:any) => { e.target.style.color=S.text; e.target.style.borderColor=S.border }}
+            onMouseLeave={(e:any) => { e.target.style.color=S.textMuted; e.target.style.borderColor=S.borderFaint }}>
+            Login
+          </button>
           <button onClick={onMessages}
             style={{ background:'none', border:`1px solid ${S.borderFaint}`, fontFamily:S.headline, fontSize:11, letterSpacing:'0.15em', textTransform:'uppercase', color:S.textMuted, cursor:'pointer', padding:'8px 16px', transition:'all 0.2s' }}
             onMouseEnter={(e:any) => { e.target.style.color=S.text; e.target.style.borderColor=S.border }}

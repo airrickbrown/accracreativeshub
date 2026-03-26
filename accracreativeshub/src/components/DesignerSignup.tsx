@@ -77,19 +77,15 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
-      <Nav onAdmin={() => {}} onSignup={() => {}} onMessages={() => {}} scrolled={true} />
-
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          padding: '100px 40px 60px',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 60,
-          alignItems: 'start',
-        }}
-      >
+     <Nav 
+  onAdmin={()=>{}} 
+  onSignup={()=>{}} 
+  onMessages={()=>{}} 
+  onMarketplace={()=>{}} 
+  onHowItWorks={()=>{}} 
+  onForDesigners={()=>{}} 
+  scrolled={true} 
+/>
         <div>
           <Lbl style={{ marginBottom: 16 }}>
             Step {step} — {stepLabels[step - 1]}
