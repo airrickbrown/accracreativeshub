@@ -1,10 +1,3 @@
-// ── DESIGNER SIGNUP / VERIFICATION COMPONENT ──
-// 4-step application flow for designers joining the platform.
-// Step 1: Personal details
-// Step 2: Portfolio upload
-// Step 3: Identity verification (Ghana Card)
-// Step 4: Final setup + profile preview
-
 import React, { useState } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Inp, Sel, Txt, Hl, Body, Lbl, Badge, GoldLine } from './UI'
@@ -77,15 +70,19 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
-     <Nav 
-  onAdmin={()=>{}} 
-  onSignup={()=>{}} 
-  onMessages={()=>{}} 
-  onMarketplace={()=>{}} 
-  onHowItWorks={()=>{}} 
-  onForDesigners={()=>{}} 
-  scrolled={true} 
-/>
+      <Nav onAdmin={() => {}} onSignup={() => {}} onMessages={() => {}} scrolled={true} />
+
+      <div
+        style={{
+          maxWidth: 1100,
+          margin: '0 auto',
+          padding: '100px 40px 60px',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 60,
+          alignItems: 'start',
+        }}
+      >
         <div>
           <Lbl style={{ marginBottom: 16 }}>
             Step {step} — {stepLabels[step - 1]}
@@ -142,8 +139,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
                     style={{
                       width: 24,
                       height: 24,
-                      background:
-                        step === n ? S.gold : step > n ? 'rgba(201,168,76,0.3)' : S.surface,
+                      background: step === n ? S.gold : step > n ? 'rgba(201,168,76,0.3)' : S.surface,
                       border: `1px solid ${step === n ? S.gold : S.borderFaint}`,
                       display: 'flex',
                       alignItems: 'center',
@@ -152,7 +148,6 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
                       fontSize: 9,
                       fontFamily: S.body,
                       fontWeight: 700,
-                      transition: 'all 0.3s',
                     }}
                   >
                     {n}
@@ -180,36 +175,11 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
         <div>
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Inp
-                label="Full Name"
-                placeholder="e.g. Abena Kyei"
-                value={form.name}
-                onChange={(v: string) => f('name', v)}
-              />
-              <Inp
-                label="Email Address"
-                placeholder="e.g. abena@email.com"
-                value={form.email}
-                onChange={(v: string) => f('email', v)}
-              />
-              <Inp
-                label="Password"
-                placeholder="Create a password"
-                value={form.password}
-                onChange={(v: string) => f('password', v)}
-              />
-              <Inp
-                label="WhatsApp Number"
-                placeholder="+233..."
-                value={form.phone}
-                onChange={(v: string) => f('phone', v)}
-              />
-              <Inp
-                label="Location"
-                placeholder="e.g. Accra, East Legon"
-                value={form.location}
-                onChange={(v: string) => f('location', v)}
-              />
+              <Inp label="Full Name" placeholder="e.g. Abena Kyei" value={form.name} onChange={(v: string) => f('name', v)} />
+              <Inp label="Email Address" placeholder="e.g. abena@email.com" value={form.email} onChange={(v: string) => f('email', v)} />
+              <Inp label="Password" placeholder="Create a password" value={form.password} onChange={(v: string) => f('password', v)} />
+              <Inp label="WhatsApp Number" placeholder="+233..." value={form.phone} onChange={(v: string) => f('phone', v)} />
+              <Inp label="Location" placeholder="e.g. Accra, East Legon" value={form.location} onChange={(v: string) => f('location', v)} />
               <Sel
                 label="Primary Service"
                 options={['', 'Logo Design', 'Flyer & Social Media', 'Business Branding']}
@@ -222,8 +192,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Body style={{ fontSize: 12 }}>
-                Upload a minimum of 5 samples. These will be reviewed by our editorial board before
-                your profile is approved.
+                Upload a minimum of 5 samples. These will be reviewed by our editorial board before your profile is approved.
               </Body>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -240,7 +209,6 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
                       justifyContent: 'center',
                       gap: 8,
                       cursor: 'pointer',
-                      transition: 'border-color 0.2s',
                       overflow: 'hidden',
                     }}
                     onClick={() => f('portfolioCount', Math.max(form.portfolioCount, i + 1) + 1)}
@@ -271,11 +239,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
                 ))}
               </div>
 
-              <Btn
-                variant="outline"
-                full
-                onClick={() => f('portfolioCount', form.portfolioCount + 1)}
-              >
+              <Btn variant="outline" full onClick={() => f('portfolioCount', form.portfolioCount + 1)}>
                 + Add Portfolio Sample
               </Btn>
 
@@ -292,8 +256,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Hl style={{ fontSize: 20, marginBottom: 4 }}>Verification &amp; Security</Hl>
               <Body style={{ fontSize: 12 }}>
-                Government-issued identification is required to protect clients and maintain platform
-                integrity. Your ID is encrypted and never shown publicly.
+                Government-issued identification is required to protect clients and maintain platform integrity. Your ID is encrypted and never shown publicly.
               </Body>
 
               <div
@@ -333,12 +296,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
 
           {step === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Inp
-                label="Starting Price (GH₵)"
-                placeholder="e.g. 150"
-                value={form.price}
-                onChange={(v: string) => f('price', v)}
-              />
+              <Inp label="Starting Price (GH₵)" placeholder="e.g. 150" value={form.price} onChange={(v: string) => f('price', v)} />
               <Sel
                 label="Average Response Time"
                 options={['', 'Under 30 minutes', '1 hour', '2–3 hours', 'Same day']}

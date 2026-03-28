@@ -3,21 +3,20 @@
 import React, { useState, useEffect } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
-import Nav                from './components/Nav'
-import DesignerCard       from './components/DesignerCard'
-import DesignerProfile    from './components/DesignerProfile'
-import BriefBuilder       from './components/BriefBuilder'
+import Nav from './components/Nav'
+import DesignerCard from './components/DesignerCard'
+import DesignerProfile from './components/DesignerProfile'
+import BriefBuilder from './components/BriefBuilder'
 import MessagingInterface from './components/MessagingInterface'
-import AdminPanel         from './components/AdminPanel'
-import DesignerDashboard  from './components/DesignerDashboard'
-import DesignerSignup     from './components/DesignerSignup'
+import AdminPanel from './components/AdminPanel'
+import DesignerDashboard from './components/DesignerDashboard'
+import DesignerSignup from './components/DesignerSignup'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
+import { useDesigners } from './hooks/useDesigners'
 // @ts-ignore
 import { supabase } from './lib/supabase'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
-
-
 
 // ── Smooth scroll to a section by id ──
 const scrollTo = (id: string) => {
@@ -28,7 +27,7 @@ const scrollTo = (id: string) => {
 // ── Derive real stats from actual data ──
 const REAL_STATS = {
   designerCount: DESIGNERS.length,
-  verifiedCount: DESIGNERS.filter(d => d.verified).length,
+  verifiedCount: DESIGNERS.filter((d) => d.verified).length,
   completedOrders: ORDERS.reduce((sum, o) => sum + (o.status === 'delivered' ? 1 : 0), 0),
   totalOrders: ORDERS.length,
   totalEarnings: ORDERS.reduce((sum, o) => sum + o.amount, 0),
@@ -50,9 +49,21 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState<any>(null)
   const [showAuth, setShowAuth] = useState(false)
-  const { user, profile, signOut } = useAuth()
+  const [chatOrder, setChatOrder] = useState<any>(null)
+
+  const { user, signOut } = useAuth()
+  const { designers: realDesigners } = useDesigners()
+
+  // Use real designers when available, fall back to mock data
+  const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
   useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1))
+    if (hashParams.get('access_token')) {
+      setShowAuth(false)
+      window.history.replaceState({}, '', '/')
+    }
+
     setTimeout(() => setHeroIn(true), 100)
 
     const fn = () => setScrolled(window.scrollY > 60)
@@ -77,7 +88,7 @@ export default function App() {
 
   const cats = ['All', 'Logo Design', 'Flyer & Social Media', 'Business Branding']
 
-  const filtered = DESIGNERS.filter(d => {
+  const filtered = activeDesigners.filter((d: any) => {
     const mc = category === 'All' || d.category === category
     const ms =
       !search ||
@@ -90,13 +101,15 @@ export default function App() {
 
   const navProps = {
     scrolled,
+    user,
     onAdmin: () => setShowAdmin(true),
     onSignup: () => setShowSignup(true),
-    onMessages: () => setShowChat(true),
+    onMessages: () => (user ? setShowChat(true) : setShowAuth(true)),
     onMarketplace: () => scrollTo('marketplace'),
     onHowItWorks: () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
-    onAuth: () => setShowAuth(true),
+    onLogin: () => setShowAuth(true),
+    onSignOut: signOut,
   }
 
   return (
@@ -143,9 +156,22 @@ export default function App() {
         <BriefBuilder
           designer={briefDesigner}
           onClose={() => setBriefDesigner(null)}
+          onOrderCreated={(order) => {
+            setBriefDesigner(null)
+            setChatOrder(order)
+            setShowChat(true)
+          }}
         />
       )}
-      {showChat && <MessagingInterface onClose={() => setShowChat(false)} />}
+      {showChat && (
+        <MessagingInterface
+          onClose={() => {
+            setShowChat(false)
+            setChatOrder(null)
+          }}
+          initialOrder={chatOrder}
+        />
+      )}
       {selectedDesigner && (
         <DesignerProfile
           designer={selectedDesigner}
@@ -238,7 +264,7 @@ export default function App() {
                 { n: `${REAL_STATS.verifiedCount}`, l: 'Verified Designers' },
                 { n: `${REAL_STATS.totalOrders}`, l: 'Active Projects' },
                 { n: `${REAL_STATS.commission}%`, l: 'Commission Only' },
-              ].map(s => (
+              ].map((s) => (
                 <div key={s.l}>
                   <Hl
                     style={{
@@ -353,7 +379,7 @@ export default function App() {
             { label: 'Verified Designers', value: REAL_STATS.verifiedCount, suffix: '' },
             { label: 'Projects Completed', value: REAL_STATS.completedOrders, suffix: '' },
             { label: 'Platform Avg Rating', value: REAL_STATS.avgRating, suffix: ' ★' },
-          ].map(s => (
+          ].map((s) => (
             <div
               key={s.label}
               style={{ background: S.bgLow, padding: '24px 28px', textAlign: 'center' }}
@@ -403,7 +429,7 @@ export default function App() {
             <div style={{ display: 'flex', flex: 1, minWidth: 260 }}>
               <input
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, style, or category..."
                 style={{
                   flex: 1,
@@ -440,7 +466,7 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap' }}>
-              {cats.map(c => (
+              {cats.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
@@ -474,7 +500,7 @@ export default function App() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
-            {filtered.map(d => (
+            {filtered.map((d: any) => (
               <DesignerCard
                 key={d.id}
                 designer={d}
@@ -713,7 +739,7 @@ export default function App() {
                 { label: 'How It Works', fn: () => scrollTo('how-it-works') },
                 { label: 'Messages', fn: () => setShowChat(true) },
                 { label: 'Admin Panel', fn: () => setShowAdmin(true) },
-              ].map(l => (
+              ].map((l) => (
                 <div
                   key={l.label}
                   onClick={l.fn}
@@ -740,7 +766,7 @@ export default function App() {
                 { label: 'Designer Signup', fn: () => setShowSignup(true) },
                 { label: 'View Analytics Demo', fn: () => setShowAnalytics(DESIGNERS[0]) },
                 { label: 'For Designers', fn: () => scrollTo('for-designers') },
-              ].map(l => (
+              ].map((l) => (
                 <div
                   key={l.label}
                   onClick={l.fn}
@@ -768,7 +794,7 @@ export default function App() {
                 { label: 'For Designers', fn: () => scrollTo('for-designers') },
                 { label: 'Contact Us', fn: () => setShowChat(true) },
                 { label: 'Admin', fn: () => setShowAdmin(true) },
-              ].map(l => (
+              ].map((l) => (
                 <div
                   key={l.label}
                   onClick={l.fn}
@@ -801,11 +827,11 @@ export default function App() {
             }}
           >
             <Body style={{ fontSize: 11, margin: 0 }}>
-              © {new Date().getFullYear()} Accra Creatives Hub · Sovereign Craft ·{' '}
+              ©️ {new Date().getFullYear()} Accra Creatives Hub · Sovereign Craft ·{' '}
               {REAL_STATS.commission}% commission on completed orders
             </Body>
             <div style={{ display: 'flex', gap: 20 }}>
-              {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map(s => (
+              {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map((s) => (
                 <span
                   key={s}
                   style={{
