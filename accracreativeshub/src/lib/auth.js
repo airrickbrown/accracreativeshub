@@ -23,7 +23,6 @@ export const signUpUser = async ({ email, password, fullName, role }) => {
   }
 
   // 2. If designer, create designer row
-  //    Do not insert into profiles here.
   if (role === 'designer') {
     const { error: designerError } = await supabase
       .from('designers')
@@ -37,6 +36,19 @@ export const signUpUser = async ({ email, password, fullName, role }) => {
       ])
 
     if (designerError) throw designerError
+  }
+
+  // 3. Send welcome email
+  try {
+    await fetch('/api/send-welcome-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, fullName }),
+    })
+  } catch (emailError) {
+    console.error('Welcome email failed:', emailError)
   }
 
   return user
