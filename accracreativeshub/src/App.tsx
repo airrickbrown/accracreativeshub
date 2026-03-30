@@ -114,7 +114,7 @@ export default function App() {
     <div
       style={{
         background: S.bg,
-        minHeight: '100vh',
+        minHeight: '100dvh',
         color: S.text,
         fontFamily: S.body,
         backgroundImage: kenteUrl,
@@ -124,8 +124,21 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap');
 
         * { margin:0; padding:0; box-sizing:border-box; }
-        html, body, #root { min-height:100%; }
-        body { overflow-x:hidden; }
+
+        html, body, #root {
+          min-height: 100%;
+          background: #080808;
+        }
+
+        html, body {
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden;
+        }
+
+        body {
+          overscroll-behavior-y: none;
+        }
 
         ::-webkit-scrollbar { width:3px; height:3px; }
         ::-webkit-scrollbar-track { background:${S.bgDeep}; }

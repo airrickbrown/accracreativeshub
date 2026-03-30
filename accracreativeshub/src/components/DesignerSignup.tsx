@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Inp, Sel, Txt, Hl, Body, Lbl, Badge, GoldLine } from './UI'
 import Nav from './Nav'
@@ -10,6 +10,15 @@ interface DesignerSignupProps {
 
 export default function DesignerSignup({ onClose }: DesignerSignupProps) {
   const [step, setStep] = useState(1)
+  // ✅ FIX 1: Add isMobile detection — same pattern used across the app
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const [form, setForm] = useState({
     name: '',
@@ -70,19 +79,35 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
-      <Nav onAdmin={() => {}} onSignup={() => {}} onMessages={() => {}} scrolled={true} />
+
+      {/* ✅ FIX 2: Nav now has all required props — was missing 6 props causing crash on mobile */}
+      <Nav
+        scrolled={true}
+        user={null}
+        onAdmin={() => {}}
+        onSignup={() => {}}
+        onMessages={() => {}}
+        onMarketplace={onClose}
+        onHowItWorks={onClose}
+        onForDesigners={onClose}
+        onLogin={() => {}}
+        onSignOut={() => {}}
+      />
 
       <div
         style={{
           maxWidth: 1100,
           margin: '0 auto',
-          padding: '100px 40px 60px',
+          // ✅ FIX 3: Responsive padding — less horizontal padding on mobile
+          padding: isMobile ? '88px 16px 60px' : '100px 40px 60px',
+          // ✅ FIX 4: Single column on mobile — was hardcoded '1fr 1fr' with no mobile fallback
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 60,
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? 32 : 60,
           alignItems: 'start',
         }}
       >
+        {/* ── Left panel ── */}
         <div>
           <Lbl style={{ marginBottom: 16 }}>
             Step {step} — {stepLabels[step - 1]}
@@ -122,6 +147,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
             ))}
           </div>
 
+          {/* Step progress indicator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
             {[1, 2, 3, 4].map((n, i) => (
               <React.Fragment key={n}>
@@ -172,6 +198,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
           </div>
         </div>
 
+        {/* ── Right panel (form) ── */}
         <div>
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -349,6 +376,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
             </div>
           )}
 
+          {/* Navigation buttons */}
           <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
             {step > 1 && (
               <Btn variant="ghost" onClick={() => setStep((s) => s - 1)} full>
