@@ -24,6 +24,12 @@ export const S = {
   info:           "#4a7acc",
   headline:       "'Newsreader', Georgia, serif",
   body:           "'Manrope', sans-serif",
+
+  radiusSm:       8,
+  radiusMd:       12,
+  radiusLg:       16,
+  shadowSoft:     "0 16px 40px rgba(0,0,0,0.28)",
+  shadowStrong:   "0 24px 60px rgba(0,0,0,0.42)",
 }
 
 export const kenteUrl = `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A84C' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E")`
@@ -31,10 +37,10 @@ export const kenteUrl = `url("data:image/svg+xml,%3Csvg width='60' height='60' v
 export const BADGES: Record<string, { label: string; color: string; bg: string }> = {
   under_review: { label: "Under Review", color: S.textFaint, bg: "rgba(153,144,126,0.15)" },
   new:          { label: "New",          color: S.info,      bg: "rgba(147,197,253,0.12)" },
-  verified:     { label: "Verified",     color: S.gold,      bg: S.goldDim               },
+  verified:     { label: "Verified",     color: S.gold,      bg: S.goldDim },
   top_rated:    { label: "Top Rated",    color: "#fcd34d",   bg: "rgba(252,211,77,0.12)" },
-  elite:        { label: "Elite",        color: "#c4b5fd",   bg: "rgba(196,181,253,0.12)"},
+  elite:        { label: "Elite",        color: "#c4b5fd",   bg: "rgba(196,181,253,0.12)" },
 }
 
 export const fmt = (n: number) => `GH₵${Number(n).toLocaleString()}`
-export const pct = (n: number, t: number) => t ? Math.round((n / t) * 100) : 0
+export const pct = (n: number, t: number) => (t ? Math.round((n / t) * 100) : 0)

@@ -54,7 +54,6 @@ export default function App() {
   const { user, signOut } = useAuth()
   const { designers: realDesigners } = useDesigners()
 
-  // Use real designers when available, fall back to mock data
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
   useEffect(() => {
@@ -72,7 +71,6 @@ export default function App() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  // Optional Supabase connection test
   useEffect(() => {
     const testConnection = async () => {
       const { error } = await supabase.from('profiles').select('id').limit(1)
@@ -124,22 +122,112 @@ export default function App() {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap');
+
         * { margin:0; padding:0; box-sizing:border-box; }
-        ::-webkit-scrollbar { width:3px; }
+        html, body, #root { min-height:100%; }
+        body { overflow-x:hidden; }
+
+        ::-webkit-scrollbar { width:3px; height:3px; }
         ::-webkit-scrollbar-track { background:${S.bgDeep}; }
         ::-webkit-scrollbar-thumb { background:${S.gold}30; }
         ::placeholder { color:${S.textFaint}; }
         select option { background:${S.bgLow}; color:${S.text}; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse  { 0%,100% { opacity:0.3; } 50% { opacity:0.8; } }
-        @media (max-width:768px) {
-          .hero-grid { grid-template-columns:1fr !important; gap:40px !important; }
+
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(24px); }
+          to { opacity:1; transform:translateY(0); }
+        }
+
+        @keyframes pulse {
+          0%,100% { opacity:0.3; }
+          50% { opacity:0.8; }
+        }
+
+        @media (max-width: 1024px) {
+          .hero-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .for-designers-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+        }
+
+        @media (max-width: 768px) {
+          .hero-grid {
+            grid-template-columns:1fr !important;
+            gap:36px !important;
+            padding:64px 20px !important;
+          }
+
           .hero-portrait { display:none !important; }
-          .process-grid { grid-template-columns:1fr !important; }
-          .footer-grid { grid-template-columns:1fr 1fr !important; }
-          .stats-row { gap:20px !important; }
-          .search-row { flex-direction:column !important; }
-          section { padding:60px 20px !important; }
+
+          .platform-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+
+          .process-grid,
+          .for-designers-grid,
+          .for-designers-cards {
+            grid-template-columns:1fr !important;
+          }
+
+          .footer-grid {
+            grid-template-columns:1fr 1fr !important;
+            gap:28px !important;
+          }
+
+          .stats-row {
+            gap:20px !important;
+            flex-wrap:wrap !important;
+          }
+
+          .search-row {
+            flex-direction:column !important;
+          }
+
+          .market-search-input-row {
+            flex-direction:column !important;
+          }
+
+          .market-search-input-row > button {
+            width:100%;
+          }
+
+          section {
+            padding:64px 20px !important;
+          }
+
+          .for-designers-section {
+            padding:64px 20px !important;
+          }
+
+          .footer-root {
+            padding:48px 20px 28px !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .platform-stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .footer-grid {
+            grid-template-columns:1fr !important;
+          }
+
+          .hero-title {
+            font-size: clamp(34px, 11vw, 52px) !important;
+          }
+
+          .auth-role-grid {
+            grid-template-columns:1fr !important;
+          }
+
+          .hero-buttons {
+            flex-direction:column !important;
+            align-items:stretch !important;
+          }
+
+          .stats-row {
+            flex-direction:column !important;
+            align-items:flex-start !important;
+          }
         }
       `}</style>
 
@@ -227,6 +315,7 @@ export default function App() {
           >
             <Lbl style={{ marginBottom: 20 }}>The Sovereign Gallery</Lbl>
             <Hl
+              className="hero-title"
               style={{
                 fontSize: 'clamp(42px,7vw,80px)',
                 fontWeight: 300,
@@ -250,7 +339,7 @@ export default function App() {
               Connecting global brands with elite local craftsmanship.
             </Body>
 
-            <div style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
+            <div className="hero-buttons" style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
               <Btn variant="gold" size="lg" onClick={() => scrollTo('marketplace')}>
                 Find Your Designer →
               </Btn>
@@ -290,7 +379,7 @@ export default function App() {
               opacity: heroIn ? 1 : 0,
             }}
           >
-            <div style={{ position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: S.radiusLg }}>
               <img
                 src={DESIGNERS[0].portrait}
                 alt={DESIGNERS[0].name}
@@ -334,7 +423,7 @@ export default function App() {
           onClick={() => scrollTo('marketplace')}
           style={{
             position: 'absolute',
-            bottom: 32,
+            bottom: 24,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
@@ -365,6 +454,7 @@ export default function App() {
         }}
       >
         <div
+          className="platform-stats-grid"
           style={{
             maxWidth: 1200,
             margin: '0 auto',
@@ -426,7 +516,7 @@ export default function App() {
           <div style={{ height: 1, background: S.borderFaint, marginBottom: 28 }} />
 
           <div className="search-row" style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', flex: 1, minWidth: 260 }}>
+            <div className="market-search-input-row" style={{ display: 'flex', flex: 1, minWidth: 260, gap: 0 }}>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -437,10 +527,13 @@ export default function App() {
                   border: `1px solid ${S.border}`,
                   borderRight: 'none',
                   color: S.text,
-                  padding: '11px 16px',
+                  padding: '12px 16px',
                   fontFamily: S.body,
-                  fontSize: 13,
+                  fontSize: 14,
                   outline: 'none',
+                  minHeight: 46,
+                  borderTopLeftRadius: S.radiusSm,
+                  borderBottomLeftRadius: S.radiusSm,
                 }}
                 onFocus={(e: any) => (e.target.style.borderColor = S.gold)}
                 onBlur={(e: any) => (e.target.style.borderColor = S.border)}
@@ -451,7 +544,7 @@ export default function App() {
                   background: S.gold,
                   color: S.onPrimary,
                   border: 'none',
-                  padding: '11px 20px',
+                  padding: '12px 20px',
                   fontFamily: S.headline,
                   fontSize: 10,
                   letterSpacing: '0.15em',
@@ -459,13 +552,16 @@ export default function App() {
                   textTransform: 'uppercase',
                   fontWeight: 700,
                   whiteSpace: 'nowrap',
+                  minHeight: 46,
+                  borderTopRightRadius: S.radiusSm,
+                  borderBottomRightRadius: S.radiusSm,
                 }}
               >
                 Search
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap', borderRadius: S.radiusSm, overflow: 'hidden' }}>
               {cats.map((c) => (
                 <button
                   key={c}
@@ -474,7 +570,7 @@ export default function App() {
                     background: category === c ? S.gold : S.surface,
                     color: category === c ? S.onPrimary : S.textMuted,
                     border: 'none',
-                    padding: '11px 18px',
+                    padding: '12px 16px',
                     fontFamily: S.headline,
                     fontSize: 9,
                     letterSpacing: '0.15em',
@@ -547,6 +643,8 @@ export default function App() {
             gridTemplateColumns: 'repeat(3,1fr)',
             gap: 1,
             background: S.borderFaint,
+            borderRadius: S.radiusSm,
+            overflow: 'hidden',
           }}
         >
           {[
@@ -577,7 +675,7 @@ export default function App() {
               onClick={s.action || undefined}
               style={{
                 background: S.bgLow,
-                padding: '48px 32px',
+                padding: '42px 28px',
                 position: 'relative',
                 overflow: 'hidden',
                 textAlign: 'center',
@@ -623,9 +721,9 @@ export default function App() {
         </div>
       </section>
 
-      <section id="for-designers" style={{ padding: '96px 40px', background: S.bgDeep }}>
+      <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+          <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
             <div>
               <Lbl style={{ marginBottom: 16 }}>For Ghanaian Creatives</Lbl>
               <Hl
@@ -656,7 +754,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint }}>
+            <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
               {[
                 {
                   i: '◈',
@@ -679,7 +777,7 @@ export default function App() {
                   d: 'Earn GH₵20 for every client you refer who completes their first order.',
                 },
               ].map((f, i) => (
-                <div key={i} style={{ background: S.surface, padding: '32px 24px' }}>
+                <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
                   <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{f.i}</div>
                   <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{f.t}</Hl>
                   <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{f.d}</Body>
@@ -690,7 +788,7 @@ export default function App() {
         </div>
       </section>
 
-      <footer style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
+      <footer className="footer-root" style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
             <div>
@@ -709,7 +807,7 @@ export default function App() {
                 Ghana&apos;s first curated marketplace for verified graphic designers. Secure
                 escrow. Real reviews. Built for the creative economy.
               </Body>
-              <div style={{ display: 'flex', gap: 20 }}>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ color: S.gold, fontSize: 20, fontFamily: S.headline }}>
                     {REAL_STATS.designerCount}
@@ -830,7 +928,7 @@ export default function App() {
               ©️ {new Date().getFullYear()} Accra Creatives Hub · Sovereign Craft ·{' '}
               {REAL_STATS.commission}% commission on completed orders
             </Body>
-            <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map((s) => (
                 <span
                   key={s}
