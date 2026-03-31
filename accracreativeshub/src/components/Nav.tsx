@@ -129,8 +129,8 @@ export default function Nav({
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: isMobile ? '0 16px' : '0 40px',
-          minHeight: isMobile ? 72 : 68,
+          padding: isMobile ? '0 14px' : '0 40px',
+          minHeight: isMobile ? 74 : 68,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -143,22 +143,40 @@ export default function Nav({
             closeMobileMenu()
           }}
           style={{
-            fontFamily: S.headline,
-            fontWeight: 700,
-            color: S.gold,
-            letterSpacing: '-0.02em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? 8 : 12,
             cursor: 'pointer',
-            lineHeight: 1.05,
-            // ✅ FIX 1: Reduced from 14 to 11 on mobile — fits on one line
-            fontSize: isMobile ? 11 : 20,
-            // ✅ FIX 2: Removed maxWidth:170 (was causing the wrap) and replaced
-            //    flexShrink:1 with flexShrink:0 so logo is never squished
             flexShrink: 0,
-            // ✅ FIX 3: whiteSpace nowrap is the core fix — forces single line
-            whiteSpace: 'nowrap',
+            minWidth: 0,
           }}
         >
-          {isMobile ? 'ACCRA CREATIVES HUB' : 'ACCRA CREATIVES HUB'}
+          <img
+            src="/logo.png"
+            alt="Accra Creatives Hub logo"
+            style={{
+              width: isMobile ? 28 : 38,
+              height: isMobile ? 28 : 38,
+              objectFit: 'contain',
+              borderRadius: 6,
+              flexShrink: 0,
+              filter: 'drop-shadow(0 0 6px rgba(201,166,70,0.35))',
+            }}
+          />
+
+          <div
+            style={{
+              fontFamily: S.headline,
+              fontWeight: 700,
+              color: S.gold,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.05,
+              fontSize: isMobile ? 10 : 20,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ACCRA CREATIVES HUB
+          </div>
         </div>
 
         {!isMobile && (
@@ -314,6 +332,42 @@ export default function Nav({
             padding: '14px 16px 18px',
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 14,
+              paddingBottom: 14,
+              borderBottom: `1px solid ${S.borderFaint}`,
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="Accra Creatives Hub logo"
+              style={{
+                width: 30,
+                height: 30,
+                objectFit: 'contain',
+                borderRadius: 8,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                fontFamily: S.headline,
+                fontWeight: 700,
+                color: S.gold,
+                letterSpacing: '-0.02em',
+                fontSize: 11,
+                lineHeight: 1.05,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              ACCRA CREATIVES HUB
+            </div>
+          </div>
+
           <div
             style={{
               display: 'flex',

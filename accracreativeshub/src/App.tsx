@@ -1,5 +1,3 @@
-// ── APP.TSX ── All 6 issues fixed.
-
 import React, { useState, useEffect } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
@@ -11,7 +9,6 @@ import MessagingInterface from './components/MessagingInterface'
 import AdminPanel from './components/AdminPanel'
 import DesignerDashboard from './components/DesignerDashboard'
 import DesignerSignup from './components/DesignerSignup'
-// ── Issue 1, 2, 6: New pages ──
 import DesignerResume from './components/DesignerResume'
 import TermsPage from './components/TermsPage'
 import ContactPage from './components/ContactPage'
@@ -23,51 +20,45 @@ import { supabase } from './lib/supabase'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 
-// ── Smooth scroll to a section by id ──
 const scrollTo = (id: string) => {
   const el = document.getElementById(id)
   if (el) el.scrollIntoView({ behavior: 'smooth' })
 }
 
-// ── Derive real stats from actual data ──
 const REAL_STATS = {
-  designerCount:  DESIGNERS.length,
-  verifiedCount:  DESIGNERS.filter((d) => d.verified).length,
+  designerCount: DESIGNERS.length,
+  verifiedCount: DESIGNERS.filter((d) => d.verified).length,
   completedOrders: ORDERS.reduce((sum, o) => sum + (o.status === 'delivered' ? 1 : 0), 0),
-  totalOrders:    ORDERS.length,
-  totalEarnings:  ORDERS.reduce((sum, o) => sum + o.amount, 0),
-  commission:     10,
-  avgRating:      Number(
+  totalOrders: ORDERS.length,
+  totalEarnings: ORDERS.reduce((sum, o) => sum + o.amount, 0),
+  commission: 10,
+  avgRating: Number(
     (DESIGNERS.reduce((s, d) => s + d.rating, 0) / DESIGNERS.length).toFixed(1)
   ),
 }
 
 export default function App() {
-  const [scrolled, setScrolled]               = useState(false)
-  const [heroIn, setHeroIn]                   = useState(false)
-  const [category, setCategory]               = useState('All')
-  const [search, setSearch]                   = useState('')
+  const [scrolled, setScrolled] = useState(false)
+  const [heroIn, setHeroIn] = useState(false)
+  const [category, setCategory] = useState('All')
+  const [search, setSearch] = useState('')
   const [selectedDesigner, setSelectedDesigner] = useState<any>(null)
-  const [briefDesigner, setBriefDesigner]     = useState<any>(null)
-  const [showChat, setShowChat]               = useState(false)
-  const [showSignup, setShowSignup]           = useState(false)
-  const [showAdmin, setShowAdmin]             = useState(false)
-  const [showAnalytics, setShowAnalytics]     = useState<any>(null)
-  const [showAuth, setShowAuth]               = useState(false)
-  const [chatOrder, setChatOrder]             = useState<any>(null)
-  // ── Issue 1, 6: New overlay states ──
-  const [showResume, setShowResume]           = useState<any>(null)
-  const [showTerms, setShowTerms]             = useState(false)
-  const [showContact, setShowContact]         = useState(false)
-  const [showAbout, setShowAbout]             = useState(false)
+  const [briefDesigner, setBriefDesigner] = useState<any>(null)
+  const [showChat, setShowChat] = useState(false)
+  const [showSignup, setShowSignup] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState<any>(null)
+  const [showAuth, setShowAuth] = useState(false)
+  const [chatOrder, setChatOrder] = useState<any>(null)
+  const [showResume, setShowResume] = useState<any>(null)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showContact, setShowContact] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
 
   const { user, signOut } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
-  // ── Issue 3: SPA back-button — push history when overlay opens ──
-  // openOverlay() wraps every setter so browser back closes the overlay
-  // instead of leaving the site entirely.
   const openOverlay = (fn: () => void) => {
     window.history.pushState({ overlay: true }, '')
     fn()
@@ -99,7 +90,6 @@ export default function App() {
     const onScroll = () => setScrolled(window.scrollY > 60)
     window.addEventListener('scroll', onScroll)
 
-    // ── Issue 3: popstate = browser back → close top overlay ──
     const onPopState = () => closeAll()
     window.addEventListener('popstate', onPopState)
 
@@ -113,7 +103,7 @@ export default function App() {
     const testConnection = async () => {
       const { error } = await supabase.from('profiles').select('id').limit(1)
       if (error) console.log('Supabase test:', error.message)
-      else        console.log('Supabase connected')
+      else console.log('Supabase connected')
     }
     testConnection()
   }, [])
@@ -130,18 +120,17 @@ export default function App() {
     return mc && ms
   })
 
-  // ── Issue 4: Logo now scrolls to very top (home), not marketplace section ──
   const navProps = {
     scrolled,
     user,
-    onAdmin:        () => openOverlay(() => setShowAdmin(true)),
-    onSignup:       () => openOverlay(() => setShowSignup(true)),
-    onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)),
-    onMarketplace:  () => window.scrollTo({ top: 0, behavior: 'smooth' }), // ← FIX 4
-    onHowItWorks:   () => scrollTo('how-it-works'),
+    onAdmin: () => openOverlay(() => setShowAdmin(true)),
+    onSignup: () => openOverlay(() => setShowSignup(true)),
+    onMessages: () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)),
+    onMarketplace: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    onHowItWorks: () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
-    onLogin:        () => openOverlay(() => setShowAuth(true)),
-    onSignOut:      signOut,
+    onLogin: () => openOverlay(() => setShowAuth(true)),
+    onSignOut: signOut,
   }
 
   return (
@@ -212,6 +201,7 @@ export default function App() {
           section         { padding: 64px 20px !important; }
           .for-designers-section { padding: 64px 20px !important; }
           .footer-root    { padding: 48px 20px 28px !important; }
+          .hero-watermark { width: 220px !important; right: -20px !important; top: 55% !important; opacity: 0.04 !important; }
         }
 
         @media (max-width: 560px) {
@@ -221,14 +211,13 @@ export default function App() {
           .auth-role-grid      { grid-template-columns: 1fr !important; }
           .hero-buttons        { flex-direction: column !important; align-items: stretch !important; }
           .stats-row           { flex-direction: column !important; align-items: flex-start !important; }
+          .hero-watermark      { width: 160px !important; right: -12px !important; top: 54% !important; opacity: 0.035 !important; }
         }
       `}</style>
 
-      {/* ── Overlays ── */}
-      {showSignup    && <DesignerSignup onClose={() => setShowSignup(false)} />}
-      {showAuth      && <AuthModal onClose={() => setShowAuth(false)} />}
-      {/* Issue 5: Admin only accessible if user is logged in — guard here too */}
-      {showAdmin     && user && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      {showSignup && <DesignerSignup onClose={() => setShowSignup(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showAdmin && user && <AdminPanel onClose={() => setShowAdmin(false)} />}
       {showAnalytics && (
         <DesignerDashboard
           designer={showAnalytics}
@@ -253,7 +242,6 @@ export default function App() {
         />
       )}
 
-      {/* Issue 1: Resume page — sits above DesignerProfile in z-order */}
       {showResume && (
         <DesignerResume
           designer={showResume}
@@ -276,7 +264,6 @@ export default function App() {
             setSelectedDesigner(null)
             openOverlay(() => setShowChat(true))
           }}
-          // Issue 1: was calling onMessage (wrong) — now opens Resume page
           onResume={(d: any) => {
             setSelectedDesigner(null)
             openOverlay(() => setShowResume(d))
@@ -289,10 +276,9 @@ export default function App() {
         />
       )}
 
-      {/* Issue 2 & 6: New pages */}
-      {showTerms   && <TermsPage   onClose={() => setShowTerms(false)} />}
+      {showTerms && <TermsPage onClose={() => setShowTerms(false)} />}
       {showContact && <ContactPage onClose={() => setShowContact(false)} />}
-      {showAbout   && (
+      {showAbout && (
         <AboutPage
           onClose={() => setShowAbout(false)}
           onSignup={() => { setShowAbout(false); openOverlay(() => setShowSignup(true)) }}
@@ -302,7 +288,6 @@ export default function App() {
 
       <Nav {...navProps} />
 
-      {/* ── Hero ── */}
       <section
         id="hero"
         style={{
@@ -314,6 +299,25 @@ export default function App() {
           overflow: 'hidden',
         }}
       >
+        <img
+          src="/logo.png"
+          alt="Accra Creatives Hub watermark"
+          className="hero-watermark"
+          style={{
+            position: 'absolute',
+            right: '6%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 340,
+            maxWidth: '42vw',
+            opacity: 0.045,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            zIndex: 1,
+            filter: 'brightness(1.08)',
+          }}
+        />
+
         <div
           className="hero-grid"
           style={{
@@ -345,15 +349,15 @@ export default function App() {
             </Body>
 
             <div className="hero-buttons" style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
-              <Btn variant="gold"  size="lg" onClick={() => scrollTo('marketplace')}>Find Your Designer →</Btn>
+              <Btn variant="gold" size="lg" onClick={() => scrollTo('marketplace')}>Find Your Designer →</Btn>
               <Btn variant="ghost" size="lg" onClick={() => scrollTo('how-it-works')}>How It Works</Btn>
             </div>
 
             <div className="stats-row" style={{ display: 'flex', gap: 36 }}>
               {[
                 { n: `${REAL_STATS.verifiedCount}`, l: 'Verified Designers' },
-                { n: `${REAL_STATS.totalOrders}`,   l: 'Active Projects'    },
-                { n: `${REAL_STATS.commission}%`,   l: 'Commission Only'    },
+                { n: `${REAL_STATS.totalOrders}`, l: 'Active Projects' },
+                { n: `${REAL_STATS.commission}%`, l: 'Commission Only' },
               ].map((s) => (
                 <div key={s.l}>
                   <Hl style={{ color: S.gold, fontSize: 28, fontWeight: 300, lineHeight: 1 }}>{s.n}</Hl>
@@ -388,9 +392,16 @@ export default function App() {
         <div
           onClick={() => scrollTo('marketplace')}
           style={{
-            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-            animation: 'pulse 2.5s ease infinite', cursor: 'pointer',
+            position: 'absolute',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'pulse 2.5s ease infinite',
+            cursor: 'pointer',
           }}
         >
           <div style={{ width: 1, height: 40, background: `linear-gradient(to bottom,transparent,${S.gold})` }} />
@@ -398,29 +409,61 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── Platform stats bar ── */}
-      <section style={{ background: S.surface, padding: '32px 40px', borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}` }}>
-        <div
-          className="platform-stats-grid"
-          style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: S.borderFaint }}
-        >
-          {[
-            { label: 'Designers on Platform', value: REAL_STATS.designerCount,  suffix: ''   },
-            { label: 'Verified Designers',    value: REAL_STATS.verifiedCount,  suffix: ''   },
-            { label: 'Projects Completed',    value: REAL_STATS.completedOrders, suffix: ''  },
-            { label: 'Platform Avg Rating',   value: REAL_STATS.avgRating,      suffix: ' ★' },
-          ].map((s) => (
-            <div key={s.label} style={{ background: S.bgLow, padding: '24px 28px', textAlign: 'center' }}>
-              <div style={{ color: S.gold, fontSize: 32, fontFamily: S.headline, fontWeight: 300, lineHeight: 1 }}>
-                {s.value}{s.suffix}
+      <section
+        style={{
+          background: S.surface,
+          padding: '32px 40px',
+          borderTop: `1px solid ${S.borderFaint}`,
+          borderBottom: `1px solid ${S.borderFaint}`,
+        }}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              justifyContent: 'center',
+              marginBottom: 20,
+              opacity: 0.9,
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="Accra Creatives Hub"
+              style={{ width: 22, height: 22, objectFit: 'contain' }}
+            />
+            <Lbl style={{ margin: 0, color: S.gold }}>Platform Overview</Lbl>
+          </div>
+
+          <div
+            className="platform-stats-grid"
+            style={{
+              maxWidth: 1200,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4,1fr)',
+              gap: 1,
+              background: S.borderFaint,
+            }}
+          >
+            {[
+              { label: 'Designers on Platform', value: REAL_STATS.designerCount, suffix: '' },
+              { label: 'Verified Designers', value: REAL_STATS.verifiedCount, suffix: '' },
+              { label: 'Projects Completed', value: REAL_STATS.completedOrders, suffix: '' },
+              { label: 'Platform Avg Rating', value: REAL_STATS.avgRating, suffix: ' ★' },
+            ].map((s) => (
+              <div key={s.label} style={{ background: S.bgLow, padding: '24px 28px', textAlign: 'center' }}>
+                <div style={{ color: S.gold, fontSize: 32, fontFamily: S.headline, fontWeight: 300, lineHeight: 1 }}>
+                  {s.value}{s.suffix}
+                </div>
+                <Lbl style={{ margin: 0, marginTop: 8, fontSize: 9 }}>{s.label}</Lbl>
               </div>
-              <Lbl style={{ margin: 0, marginTop: 8, fontSize: 9 }}>{s.label}</Lbl>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Marketplace ── */}
       <section id="marketplace" style={{ padding: '96px 40px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
@@ -440,20 +483,39 @@ export default function App() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, style, or category..."
                 style={{
-                  flex: 1, background: S.surface, border: `1px solid ${S.border}`, borderRight: 'none',
-                  color: S.text, padding: '12px 16px', fontFamily: S.body, fontSize: 14, outline: 'none',
-                  minHeight: 46, borderTopLeftRadius: S.radiusSm, borderBottomLeftRadius: S.radiusSm,
+                  flex: 1,
+                  background: S.surface,
+                  border: `1px solid ${S.border}`,
+                  borderRight: 'none',
+                  color: S.text,
+                  padding: '12px 16px',
+                  fontFamily: S.body,
+                  fontSize: 14,
+                  outline: 'none',
+                  minHeight: 46,
+                  borderTopLeftRadius: S.radiusSm,
+                  borderBottomLeftRadius: S.radiusSm,
                 }}
                 onFocus={(e: any) => (e.target.style.borderColor = S.gold)}
-                onBlur={(e: any)  => (e.target.style.borderColor = S.border)}
+                onBlur={(e: any) => (e.target.style.borderColor = S.border)}
               />
               <button
                 onClick={() => {}}
                 style={{
-                  background: S.gold, color: S.onPrimary, border: 'none', padding: '12px 20px',
-                  fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em', cursor: 'pointer',
-                  textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap', minHeight: 46,
-                  borderTopRightRadius: S.radiusSm, borderBottomRightRadius: S.radiusSm,
+                  background: S.gold,
+                  color: S.onPrimary,
+                  border: 'none',
+                  padding: '12px 20px',
+                  fontFamily: S.headline,
+                  fontSize: 10,
+                  letterSpacing: '0.15em',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  minHeight: 46,
+                  borderTopRightRadius: S.radiusSm,
+                  borderBottomRightRadius: S.radiusSm,
                 }}
               >
                 Search
@@ -468,9 +530,16 @@ export default function App() {
                   style={{
                     background: category === c ? S.gold : S.surface,
                     color: category === c ? S.onPrimary : S.textMuted,
-                    border: 'none', padding: '12px 16px', fontFamily: S.headline, fontSize: 9,
-                    letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase',
-                    transition: 'all 0.2s', fontWeight: 700, whiteSpace: 'nowrap',
+                    border: 'none',
+                    padding: '12px 16px',
+                    fontFamily: S.headline,
+                    fontSize: 9,
+                    letterSpacing: '0.15em',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    transition: 'all 0.2s',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {c}
@@ -499,14 +568,42 @@ export default function App() {
           </div>
 
           {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: S.textFaint, fontFamily: S.headline, fontSize: 24, fontStyle: 'italic' }}>
-              No designers found. Try a different search or category.
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '80px 0',
+                color: S.textFaint,
+              }}
+            >
+              <img
+                src="/logo.png"
+                alt="Accra Creatives Hub"
+                style={{
+                  width: 54,
+                  height: 54,
+                  objectFit: 'contain',
+                  marginBottom: 18,
+                  opacity: 0.7,
+                }}
+              />
+              <div
+                style={{
+                  fontFamily: S.headline,
+                  fontSize: 24,
+                  fontStyle: 'italic',
+                  marginBottom: 10,
+                }}
+              >
+                No designers found.
+              </div>
+              <Body style={{ fontSize: 12, margin: 0 }}>
+                Try a different search term or category.
+              </Body>
             </div>
           )}
         </div>
       </section>
 
-      {/* ── How It Works ── */}
       <section id="how-it-works" style={{ background: S.surface, padding: '96px 40px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', marginBottom: 64 }}>
           <Hl style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 300 }}>The Process of Craft</Hl>
@@ -521,16 +618,24 @@ export default function App() {
           style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}
         >
           {[
-            { n: '01', i: '▣', t: 'Build Your Brief',      d: 'Fill out our structured brief form — project type, colours, references, and budget. Your designer gets everything they need from day one.', action: () => scrollTo('marketplace') },
-            { n: '02', i: '◈', t: 'Collaborate Securely',  d: 'Chat directly with your designer. Share files, track revisions, and iterate. Funds are held in escrow until you approve the final delivery.', action: null },
-            { n: '03', i: '◉', t: 'Approve & Pay',         d: "When you're satisfied, approve the delivery. Funds are released instantly. Leave a review to help the community.", action: null },
+            { n: '01', i: '▣', t: 'Build Your Brief', d: 'Fill out our structured brief form — project type, colours, references, and budget. Your designer gets everything they need from day one.', action: () => scrollTo('marketplace') },
+            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Share files, track revisions, and iterate. Funds are held in escrow until you approve the final delivery.', action: null },
+            { n: '03', i: '◉', t: 'Approve & Pay', d: "When you're satisfied, approve the delivery. Funds are released instantly. Leave a review to help the community.", action: null },
           ].map((s, i) => (
             <div
               key={i}
               onClick={s.action || undefined}
-              style={{ background: S.bgLow, padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
+              style={{
+                background: S.bgLow,
+                padding: '42px 28px',
+                position: 'relative',
+                overflow: 'hidden',
+                textAlign: 'center',
+                cursor: s.action ? 'pointer' : 'default',
+                transition: 'background 0.2s',
+              }}
               onMouseEnter={(e: any) => { if (s.action) e.currentTarget.style.background = S.surface }}
-              onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = S.bgLow   }}
+              onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = S.bgLow }}
             >
               <div style={{ position: 'absolute', top: 12, right: 16, color: `${S.gold}06`, fontFamily: S.headline, fontSize: 80, fontWeight: 300, userSelect: 'none' }}>
                 {s.n}
@@ -551,7 +656,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── For Designers ── */}
       <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
@@ -568,17 +672,17 @@ export default function App() {
                 briefs, and get paid securely through escrow. Free to join — we only earn when you do.
               </Body>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn variant="gold"    size="lg" onClick={() => openOverlay(() => setShowSignup(true))}>Apply to Join →</Btn>
+                <Btn variant="gold" size="lg" onClick={() => openOverlay(() => setShowSignup(true))}>Apply to Join →</Btn>
                 <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>See Analytics Demo</Btn>
               </div>
             </div>
 
             <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
               {[
-                { i: '◈', t: 'Free to List',       d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
-                { i: '◉', t: 'Verified Badge',      d: 'Our editorial board reviews and approves every designer before they go live.' },
-                { i: '◐', t: 'Secure Escrow',       d: 'Funds are held safely. You always get paid for work that is approved.' },
-                { i: '◑', t: 'Referral Earnings',   d: 'Earn GH₵20 for every client you refer who completes their first order.' },
+                { i: '◈', t: 'Free to List', d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
+                { i: '◉', t: 'Verified Badge', d: 'Our editorial board reviews and approves every designer before they go live.' },
+                { i: '◐', t: 'Secure Escrow', d: 'Funds are held safely. You always get paid for work that is approved.' },
+                { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.' },
               ].map((f, i) => (
                 <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
                   <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{f.i}</div>
@@ -591,24 +695,51 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
       <footer className="footer-root" style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
-
-            {/* Brand col */}
             <div>
-              <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 16 }}>
-                ACCRA CREATIVES HUB
-              </Hl>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <img
+                  src="/logo.png"
+                  alt="Accra Creatives Hub logo"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    objectFit: 'contain',
+                    borderRadius: 8,
+                  }}
+                />
+                <Hl
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: S.gold,
+                    letterSpacing: '-0.02em',
+                    marginBottom: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  ACCRA CREATIVES HUB
+                </Hl>
+              </div>
+
               <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>
                 Ghana&apos;s first curated marketplace for verified graphic designers. Secure
                 escrow. Real reviews. Built for the creative economy.
               </Body>
+
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {[
                   { v: REAL_STATS.designerCount, l: 'Designers' },
-                  { v: REAL_STATS.totalOrders,   l: 'Orders'    },
+                  { v: REAL_STATS.totalOrders, l: 'Orders' },
                   { v: `${REAL_STATS.avgRating}★`, l: 'Avg Rating' },
                 ].map((s) => (
                   <div key={s.l}>
@@ -619,16 +750,13 @@ export default function App() {
               </div>
             </div>
 
-            {/* Platform col */}
             <div>
               <Lbl style={{ marginBottom: 16 }}>Platform</Lbl>
               {[
-                { label: 'Marketplace',  fn: () => scrollTo('marketplace')  },
-                { label: 'Designers',    fn: () => scrollTo('marketplace')  },
+                { label: 'Marketplace', fn: () => scrollTo('marketplace') },
+                { label: 'Designers', fn: () => scrollTo('marketplace') },
                 { label: 'How It Works', fn: () => scrollTo('how-it-works') },
-                // Issue 6: Messages fixed — only open if user logged in
-                { label: 'Messages',     fn: () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)) },
-                // Issue 5: Admin Panel hidden from non-users
+                { label: 'Messages', fn: () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)) },
                 ...(user ? [{ label: 'Admin Panel', fn: () => openOverlay(() => setShowAdmin(true)) }] : []),
               ].map((l) => (
                 <div
@@ -643,14 +771,13 @@ export default function App() {
               ))}
             </div>
 
-            {/* For Designers col */}
             <div>
               <Lbl style={{ marginBottom: 16 }}>For Designers</Lbl>
               {[
-                { label: 'Apply to Join',       fn: () => openOverlay(() => setShowSignup(true))     },
-                { label: 'Designer Signup',     fn: () => openOverlay(() => setShowSignup(true))     },
-                { label: 'Analytics Demo',      fn: () => setShowAnalytics(DESIGNERS[0])             },
-                { label: 'For Designers',       fn: () => scrollTo('for-designers')                  },
+                { label: 'Apply to Join', fn: () => openOverlay(() => setShowSignup(true)) },
+                { label: 'Designer Signup', fn: () => openOverlay(() => setShowSignup(true)) },
+                { label: 'Analytics Demo', fn: () => setShowAnalytics(DESIGNERS[0]) },
+                { label: 'For Designers', fn: () => scrollTo('for-designers') },
               ].map((l) => (
                 <div
                   key={l.label}
@@ -664,16 +791,14 @@ export default function App() {
               ))}
             </div>
 
-            {/* Company col — Issue 6: All links fixed */}
             <div>
               <Lbl style={{ marginBottom: 16 }}>Company</Lbl>
               {[
-                { label: 'About',         fn: () => openOverlay(() => setShowAbout(true))   },   // ← was scrollTo('hero')
-                { label: 'How It Works',  fn: () => scrollTo('how-it-works')                },
-                { label: 'For Designers', fn: () => scrollTo('for-designers')               },
-                { label: 'Contact Us',    fn: () => openOverlay(() => setShowContact(true)) },   // ← was setShowChat
-                { label: 'Terms',         fn: () => openOverlay(() => setShowTerms(true))   },   // ← new
-                // Issue 5: Admin removed from public footer
+                { label: 'About', fn: () => openOverlay(() => setShowAbout(true)) },
+                { label: 'How It Works', fn: () => scrollTo('how-it-works') },
+                { label: 'For Designers', fn: () => scrollTo('for-designers') },
+                { label: 'Contact Us', fn: () => openOverlay(() => setShowContact(true)) },
+                { label: 'Terms', fn: () => openOverlay(() => setShowTerms(true)) },
               ].map((l) => (
                 <div
                   key={l.label}
@@ -688,7 +813,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Footer bottom bar */}
           <div
             style={{
               borderTop: `1px solid ${S.borderFaint}`,
@@ -715,7 +839,15 @@ export default function App() {
               {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map((s) => (
                 <span
                   key={s}
-                  style={{ color: S.textFaint, fontSize: 10, fontFamily: S.body, cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'color 0.2s' }}
+                  style={{
+                    color: S.textFaint,
+                    fontSize: 10,
+                    fontFamily: S.body,
+                    cursor: 'pointer',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    transition: 'color 0.2s',
+                  }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.gold)}
                   onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
                 >
