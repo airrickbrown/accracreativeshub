@@ -1,4 +1,7 @@
-// ── DESIGNER PROFILE COMPONENT ──
+// ── DESIGNER PROFILE ──
+// FIX: "View Analytics" hidden — it's an internal tool, not for public profile views.
+// FIX: Mobile layout fully responsive.
+
 import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Badge, Hl, Body, Lbl, Divider } from './UI'
@@ -8,12 +11,15 @@ interface DesignerProfileProps {
   designer:    any
   onHire:      (d: any) => void
   onMessage:   () => void
-  onResume:    (d: any) => void   // ← Issue 1: was missing, "View Resume" was calling onMessage
-  onAnalytics: () => void
+  onResume:    (d: any) => void
+  onAnalytics: () => void   // kept for internal use but button hidden publicly
   onClose:     () => void
+  isAdmin?:    boolean       // pass true from AdminPanel to show analytics button
 }
 
-export default function DesignerProfile({ designer, onHire, onMessage, onResume, onAnalytics, onClose }: DesignerProfileProps) {
+export default function DesignerProfile({
+  designer, onHire, onMessage, onResume, onAnalytics, onClose, isAdmin = false,
+}: DesignerProfileProps) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -27,36 +33,31 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
 
       <Nav
-        scrolled={true}
-        user={null}
-        onAdmin={() => {}}
-        onSignup={() => {}}
-        onMessages={onMessage}
-        onMarketplace={onClose}
-        onHowItWorks={onClose}
-        onForDesigners={onClose}
-        onLogin={() => {}}
-        onSignOut={() => {}}
+        scrolled={true} user={null}
+        onAdmin={() => {}} onSignup={() => {}} onMessages={onMessage}
+        onMarketplace={onClose} onHowItWorks={onClose} onForDesigners={onClose}
+        onLogin={() => {}} onSignOut={() => {}}
       />
 
-      {/* Back button */}
+      {/* Back */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '80px 16px 0' : '80px 40px 0' }}>
         <button
           onClick={onClose}
           style={{
             background: 'none', border: `1px solid ${S.borderFaint}`, color: S.textMuted,
-            fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase',
-            padding: '8px 16px', cursor: 'pointer', borderRadius: 8, marginBottom: 24,
+            fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em',
+            textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer',
+            borderRadius: 8, marginBottom: 24,
           }}
         >
           ← Back
         </button>
       </div>
 
+      {/* Main grid */}
       <div
         style={{
-          maxWidth: 1100,
-          margin: '0 auto',
+          maxWidth: 1100, margin: '0 auto',
           padding: isMobile ? '0 16px 60px' : '0 40px 60px',
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '280px 1fr',
@@ -64,18 +65,20 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
           alignItems: 'start',
         }}
       >
-        {/* ── Left sidebar ── */}
+
+        {/* ── Sidebar ── */}
         <div>
+          {/* Portrait */}
           <div style={{ position: 'relative', overflow: 'hidden', height: isMobile ? 260 : 320 }}>
             <img
-              src={designer.portrait}
-              alt={designer.name}
+              src={designer.portrait} alt={designer.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', filter: 'grayscale(100%)', opacity: 0.8 }}
             />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,transparent 50%,rgba(19,19,19,0.7))' }} />
             <div style={{ position: 'absolute', top: 12, left: 12 }}><Badge type={designer.badge} /></div>
           </div>
 
+          {/* Info panel */}
           <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderTop: 'none', padding: 18 }}>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 14 }}>
               {designer.tags.map((t: string) => (
@@ -86,11 +89,13 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
             </div>
             <Divider />
             <Lbl style={{ marginBottom: 4, fontSize: 8 }}>Project Investment</Lbl>
-            <Hl style={{ color: S.gold, fontSize: 22, marginBottom: 2 }}>Starting at<br />GH₵{designer.price}</Hl>
+            <Hl style={{ color: S.gold, fontSize: 22, marginBottom: 2 }}>
+              Starting at<br />GH₵{designer.price}
+            </Hl>
             <Body style={{ fontSize: 10, marginBottom: 14 }}>{designer.responseTime} · {designer.reviews} clients</Body>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Btn variant="gold"    full onClick={() => onHire(designer)}>Hire Designer</Btn>
-              {/* Issue 1 FIX: was onClick={onMessage} — now correctly opens resume page */}
+              {/* FIX: View Resume now opens proper resume page, not messages */}
               <Btn variant="outline" full onClick={() => onResume(designer)}>View Resume</Btn>
             </div>
           </div>
@@ -104,9 +109,13 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
                 ● OPEN TO PROJECTS
               </span>
             </div>
-            <Hl style={{ fontSize: 'clamp(32px,6vw,60px)', fontWeight: 300, marginBottom: 8 }}>{designer.name}</Hl>
+            <Hl style={{ fontSize: isMobile ? 'clamp(28px,8vw,44px)' : 'clamp(32px,6vw,60px)', fontWeight: 300, marginBottom: 8 }}>
+              {designer.name}
+            </Hl>
             <Body style={{ fontSize: 14, marginBottom: 14 }}>{designer.tagline}</Body>
-            <div style={{ display: 'flex', gap: isMobile ? 20 : 24, flexWrap: 'wrap' }}>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: isMobile ? 16 : 24, flexWrap: 'wrap' }}>
               {[
                 { l: 'Accolades',     v: designer.reviews      },
                 { l: 'Commissions',   v: designer.orders        },
@@ -114,21 +123,33 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
               ].map((s) => (
                 <div key={s.l}>
                   <Lbl style={{ marginBottom: 4, fontSize: 8 }}>{s.l}</Lbl>
-                  <Hl style={{ fontSize: 18 }}>{s.v}</Hl>
+                  <Hl style={{ fontSize: isMobile ? 16 : 18 }}>{s.v}</Hl>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Portfolio */}
           <Hl style={{ fontSize: 20, marginBottom: 16 }}>Selected Works</Hl>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 24 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: 12,
+              marginBottom: 24,
+            }}
+          >
+            {/* Text card */}
             <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 160 }}>
               <div style={{ textAlign: 'center' }}>
                 <Lbl style={{ marginBottom: 8, fontSize: 8, color: S.gold }}>MINIMAL BRANDING PROJECT</Lbl>
-                <Body style={{ fontSize: 11 }}>Brand identity exploration using Ghanaian cultural motifs for contemporary luxury market.</Body>
+                <Body style={{ fontSize: 11 }}>
+                  Brand identity exploration using Ghanaian cultural motifs for contemporary luxury market.
+                </Body>
               </div>
             </div>
-            {designer.portfolio.slice(1).map((p: string, i: number) => (
+            {/* Portfolio images */}
+            {designer.portfolio?.slice(1).map((p: string, i: number) => (
               <div key={i} style={{ overflow: 'hidden', aspectRatio: '4/3', background: designer.color }}>
                 <img
                   src={p} alt=""
@@ -140,9 +161,20 @@ export default function DesignerProfile({ designer, onHire, onMessage, onResume,
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
-            <Btn variant="gold"    size="lg" full={isMobile} onClick={() => onHire(designer)}>Hire Designer</Btn>
-            <Btn variant="outline" size="lg" full={isMobile} onClick={onAnalytics}>View Analytics</Btn>
+          {/* Bottom CTAs — FIX: "View Analytics" hidden unless isAdmin=true */}
+          <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap' }}>
+            <Btn variant="gold"    size="lg" full={isMobile} onClick={() => onHire(designer)}>
+              Hire Designer
+            </Btn>
+            <Btn variant="outline" size="lg" full={isMobile} onClick={() => onResume(designer)}>
+              View Resume
+            </Btn>
+            {/* Only admins see analytics */}
+            {isAdmin && (
+              <Btn variant="ghost" size="lg" full={isMobile} onClick={onAnalytics}>
+                View Analytics
+              </Btn>
+            )}
           </div>
         </div>
       </div>

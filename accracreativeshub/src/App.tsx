@@ -15,6 +15,9 @@ import ContactPage from './components/ContactPage'
 import AboutPage from './components/AboutPage'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
+import { Routes, Route } from "react-router-dom"
+import TermsPage from "./components/TermsPage"
+import PrivacyPage from "./components/PrivacyPage"
 // @ts-ignore
 import { supabase } from './lib/supabase'
 import AuthModal from './components/AuthModal'
@@ -132,6 +135,15 @@ export default function App() {
     onLogin: () => openOverlay(() => setShowAuth(true)),
     onSignOut: signOut,
   }
+  const path = window.location.pathname
+
+if (path === '/terms') {
+  return <TermsPage onClose={() => window.history.back()} />
+}
+
+if (path === '/privacy') {
+  return <PrivacyPage onClose={() => window.history.back()} />
+}
 
   return (
     <div
