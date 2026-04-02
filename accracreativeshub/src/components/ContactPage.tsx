@@ -23,7 +23,7 @@ const sendEmail = async ({
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Accra Creatives Hub <noreply@accracreativeshub.com>',
+      from: 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>',
       to,
       subject,
       html,

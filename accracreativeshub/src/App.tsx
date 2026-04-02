@@ -14,8 +14,10 @@ import TermsPage from './components/TermsPage'
 import PrivacyPage from './components/PrivacyPage'
 import ContactPage from './components/ContactPage'
 import AboutPage from './components/AboutPage'
+import AdminRoute from './components/AdminRoute'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
+
 // @ts-ignore
 import { supabase } from './lib/supabase'
 import AuthModal from './components/AuthModal'
@@ -147,6 +149,17 @@ export default function App() {
 
     return mc && ms
   })
+   // ── Secret admin URL — accracreativeshub.com/admin-sovereign-2024 ──
+  if (window.location.pathname === '/admin-sovereign-2024') {
+    return (
+      <AdminRoute
+        onClose={() => {
+          window.history.pushState({}, '', '/')
+          window.location.reload()
+        }}
+      />
+    )
+  }
 
   const navProps = {
     scrolled,

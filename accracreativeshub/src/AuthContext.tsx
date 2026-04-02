@@ -1,10 +1,11 @@
 // ── AuthContext.tsx ──
-// Exposes user, userRole, isAdmin, isDesigner, isClient, signOut, loading
-// Place this file at: src/AuthContext.tsx (replacing your existing one)
+// Place at: src/AuthContext.tsx
+// Handles: role detection, Google OAuth user setup, hidden admin URL
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 // @ts-ignore
 import { supabase } from './lib/supabase'
+import { handleGoogleUser } from './lib/auth'
 
 interface AuthContextType {
   user:       any
@@ -17,13 +18,9 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user:       null,
-  userRole:   null,
-  isAdmin:    false,
-  isDesigner: false,
-  isClient:   false,
-  signOut:    async () => {},
-  loading:    true,
+  user: null, userRole: null, isAdmin: false,
+  isDesigner: false, isClient: false,
+  signOut: async () => {}, loading: true,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -33,29 +30,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchRole = async (userId: string, metaRole?: string) => {
     const { data } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
+      .from('profiles').select('role').eq('id', userId).single()
     return data?.role || metaRole || 'client'
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }: any) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const role = await fetchRole(session.user.id, session.user.user_metadata?.role)
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) {
+        const role = await fetchRole(u.id, u.user_metadata?.role)
         setUserRole(role)
+        // Handle Google OAuth users — ensure profile row exists
+        if (u.app_metadata?.provider === 'google') {
+          await handleGoogleUser(u)
+        }
       }
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event: string, session: any) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          const role = await fetchRole(session.user.id, session.user.user_metadata?.role)
+        const u = session?.user ?? null
+        setUser(u)
+        if (u) {
+          const role = await fetchRole(u.id, u.user_metadata?.role)
           setUserRole(role)
+          if (u.app_metadata?.provider === 'google') {
+            await handleGoogleUser(u)
+          }
         } else {
           setUserRole(null)
         }
@@ -74,13 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user,
-      userRole,
+      user, userRole,
       isAdmin:    userRole === 'admin',
       isDesigner: userRole === 'designer',
       isClient:   userRole === 'client',
-      signOut,
-      loading,
+      signOut, loading,
     }}>
       {children}
     </AuthContext.Provider>

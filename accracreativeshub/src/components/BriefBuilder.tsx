@@ -76,6 +76,7 @@ export default function BriefBuilder({ designer, onClose, onOrderCreated }: Brie
     return
   }
 
+
   alert(`Order placed! Reference: ACH-${data.id.slice(0, 8).toUpperCase()}`)
 
   if (onOrderCreated) {
