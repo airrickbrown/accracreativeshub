@@ -1,11 +1,31 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ACCRA CREATIVES HUB | Sovereign Craft</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+    <link rel="icon" type="image/png" href="/logo.png" />
+
+    <!--
+      FIX: Mobile auto-zoom
+      - interactive-widget=resizes-content stops keyboard from resizing layout
+      - viewport-fit=cover handles iPhone notch
+      - We do NOT use user-scalable=no (bad for accessibility)
+      - Instead we fix font-size on all inputs to 16px (see global CSS in App.tsx)
+        which prevents iOS from zooming in on focus
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+
+    <title>Accra Creatives Hub</title>
+    <meta name="description" content="Ghana's first curated marketplace for verified graphic designers. Secure escrow. Real reviews." />
+    <meta name="theme-color" content="#131313" />
+
+    <!-- Open Graph -->
+    <meta property="og:title"       content="Accra Creatives Hub" />
+    <meta property="og:description" content="Ghana's most curated design marketplace." />
+    <meta property="og:url"         content="https://accracreativeshub.com" />
+    <meta property="og:type"        content="website" />
   </head>
   <body>
     <div id="root"></div>
