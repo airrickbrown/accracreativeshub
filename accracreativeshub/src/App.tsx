@@ -1,5 +1,4 @@
 // ── src/App.tsx ──
-
 import React, { useState, useEffect, useCallback } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
@@ -18,8 +17,7 @@ import AboutPage from './components/AboutPage'
 import AdminRoute from './components/AdminRoute'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
-// @ts-ignore
-import { supabase } from './lib/supabase'
+import AuthCallback from './components/AuthCallback'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 
@@ -38,9 +36,8 @@ const REAL_STATS = {
 }
 
 // ── FIX: Correct categories aligned with marketplace structure ──
-const CATS = ['All', 'Logo Design', 'Business Branding', 'Flyer Design', 'Social Media Design', 'UI/UX Design', 'Motion Graphics']
-
-export default function App() {
+  const CATS = ['All', 'Logo Design', 'Business Branding', 'Flyer Design', 'Social Media Design', 'UI/UX Design', 'Motion Graphics']
+  export default function App() {
   const [scrolled, setScrolled]                 = useState(false)
   const [heroIn, setHeroIn]                     = useState(false)
   const [category, setCategory]                 = useState('All')
@@ -58,8 +55,9 @@ export default function App() {
   const [showContact, setShowContact]           = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+//  const [callbackDone, setCallbackDone] = useState(false)
 
-  const { user, signOut, isAdmin, isDesigner } = useAuth()
+  const { user, signOut, isAdmin,  isDesigner ,refreshUser, } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
@@ -176,6 +174,7 @@ export default function App() {
           .stats-row{flex-direction:column!important;align-items:flex-start!important;}
         }
       `}</style>
+      <AuthCallback onComplete={refreshUser} />
 
       {/* ── Logout confirmation ── */}
       {showLogoutConfirm && (
@@ -356,12 +355,26 @@ export default function App() {
               <DesignerCard key={d.id} designer={d} onView={d => openOverlay(() => setSelectedDesigner(d))} onHire={d => openOverlay(() => setBriefDesigner(d))} />
             ))}
           </div>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: S.textFaint }}>
-              <div style={{ fontFamily: S.headline, fontSize: 24, fontStyle: 'italic', marginBottom: 10 }}>No designers found.</div>
-              <Body style={{ fontSize: 12, margin: 0 }}>Try a different search term or category.</Body>
-            </div>
-          )}
+           {filtered.length === 0 && (
+  <div style={{ textAlign: 'center', padding: '80px 0' }}>
+       <div style={{ color: S.gold, fontSize: 36, marginBottom: 16 }}>◈</div>
+      <div style={{ fontFamily: S.headline, fontSize: 22, fontStyle: 'italic', color: S.textFaint, marginBottom: 12 }}>
+         {category !== 'All' && search === ''
+          ? `No ${category} designers yet.`
+          : 'No designers found.'}
+       </div>
+     <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8 }}>
+        {category !== 'All' && search === ''
+         ? `We're growing our ${category} roster. Browse all our verified designers in the meantime.`
+          : 'Try a different search term or category.'}
+     </Body>
+       {category !== 'All' && (
+        <Btn variant="gold" onClick={() => setCategory('All')}>
+          Browse All Designers →
+       </Btn>
+      )}
+    </div>
+  )}
         </div>
       </section>
 
