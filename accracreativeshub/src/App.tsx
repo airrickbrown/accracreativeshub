@@ -37,31 +37,36 @@ const REAL_STATS = {
   avgRating:       Number((DESIGNERS.reduce((s, d) => s + d.rating, 0) / DESIGNERS.length).toFixed(1)),
 }
 
+// ── FIX: Correct categories aligned with marketplace structure ──
+const CATS = ['All', 'Logo Design', 'Business Branding', 'Flyer Design', 'Social Media Design', 'UI/UX Design', 'Motion Graphics']
+
 export default function App() {
-  const [scrolled, setScrolled]             = useState(false)
-  const [heroIn, setHeroIn]                 = useState(false)
-  const [category, setCategory]             = useState('All')
-  const [search, setSearch]                 = useState('')
+  const [scrolled, setScrolled]                 = useState(false)
+  const [heroIn, setHeroIn]                     = useState(false)
+  const [category, setCategory]                 = useState('All')
+  const [search, setSearch]                     = useState('')
   const [selectedDesigner, setSelectedDesigner] = useState<any>(null)
-  const [briefDesigner, setBriefDesigner]   = useState<any>(null)
-  const [showChat, setShowChat]             = useState(false)
-  const [showSignup, setShowSignup]         = useState(false)
-  const [showAdmin, setShowAdmin]           = useState(false)
-  const [showAnalytics, setShowAnalytics]   = useState<any>(null)
-  const [showAuth, setShowAuth]             = useState(false)
-  const [chatOrder, setChatOrder]           = useState<any>(null)
-  const [showResume, setShowResume]         = useState<any>(null)
-  const [showTerms, setShowTerms]           = useState(false)
-  const [showContact, setShowContact]       = useState(false)
-  const [showAbout, setShowAbout]           = useState(false)
-  // ── FIX: Logout confirmation state ──
+  const [briefDesigner, setBriefDesigner]       = useState<any>(null)
+  const [showChat, setShowChat]                 = useState(false)
+  const [showSignup, setShowSignup]             = useState(false)
+  const [showAdmin, setShowAdmin]               = useState(false)
+  const [showAnalytics, setShowAnalytics]       = useState<any>(null)
+  const [showAuth, setShowAuth]                 = useState(false)
+  const [chatOrder, setChatOrder]               = useState<any>(null)
+  const [showResume, setShowResume]             = useState<any>(null)
+  const [showTerms, setShowTerms]               = useState(false)
+  const [showContact, setShowContact]           = useState(false)
+  const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const { user, signOut, isAdmin, isDesigner } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
-  // ── FIX: openOverlay pushes history so back button closes overlays ──
+  // ── FIX: "For Designers" section only shows to non-logged-in users or designers ──
+  // Clients don't need to see designer recruitment content
+  const showForDesigners = !user || isDesigner || isAdmin
+
   const openOverlay = (fn: () => void) => {
     window.history.pushState({ overlay: true }, '')
     fn()
@@ -76,14 +81,12 @@ export default function App() {
     setShowAbout(false);       setShowLogoutConfirm(false)
   }, [])
 
-  // ── FIX: Explicit logout with confirmation ──
   const handleLogout = () => setShowLogoutConfirm(true)
 
   const confirmLogout = async () => {
     setShowLogoutConfirm(false)
     closeAll()
     await signOut()
-    // Clear any pushed history states
     window.history.replaceState({}, '', '/')
   }
 
@@ -93,16 +96,11 @@ export default function App() {
       setShowAuth(false)
       window.history.replaceState({}, '', '/')
     }
-
     setTimeout(() => setHeroIn(true), 100)
-
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll)
-
-    // ── FIX: popstate closes overlays but does NOT sign out ──
+    const onScroll   = () => setScrolled(window.scrollY > 60)
     const onPopState = () => closeAll()
+    window.addEventListener('scroll', onScroll)
     window.addEventListener('popstate', onPopState)
-
     return () => {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('popstate', onPopState)
@@ -111,14 +109,8 @@ export default function App() {
 
   // ── Secret admin URL ──
   if (window.location.pathname === '/admin-sovereign-2024') {
-    return (
-      <AdminRoute
-        onClose={() => { window.history.pushState({}, '', '/'); window.location.reload() }}
-      />
-    )
+    return <AdminRoute onClose={() => { window.history.pushState({}, '', '/'); window.location.reload() }} />
   }
-
-  const cats = ['All', 'Logo Design', 'Flyer & Social Media', 'Business Branding', 'UI/UX Design', 'Motion Graphics']
 
   const filtered = activeDesigners.filter((d: any) => {
     const mc = category === 'All' || d.category === category
@@ -130,8 +122,7 @@ export default function App() {
   })
 
   const navProps = {
-    scrolled, user,
-    isAdmin,   // ── FIX: pass isAdmin to Nav so admin button is role-gated ──
+    scrolled, user, isAdmin,
     onAdmin:        isAdmin ? () => openOverlay(() => setShowAdmin(true)) : () => {},
     onSignup:       () => openOverlay(() => setShowSignup(true)),
     onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)),
@@ -139,7 +130,6 @@ export default function App() {
     onHowItWorks:   () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
     onLogin:        () => openOverlay(() => setShowAuth(true)),
-    // ── FIX: Sign out uses confirmation dialog, not direct signOut ──
     onSignOut:      handleLogout,
   }
 
@@ -151,21 +141,14 @@ export default function App() {
         html, body, #root { min-height: 100%; background: #080808; }
         html, body { margin:0; padding:0; overflow-x:hidden; }
         body { overscroll-behavior-y: none; }
-
-        /* ── FIX: All inputs 16px font-size to prevent iOS auto-zoom ── */
-        input, select, textarea {
-          font-size: 16px !important;
-        }
-
+        input, select, textarea { font-size: 16px !important; }
         ::-webkit-scrollbar { width:3px; height:3px; }
         ::-webkit-scrollbar-track { background:${S.bgDeep}; }
         ::-webkit-scrollbar-thumb { background:${S.gold}30; }
         ::placeholder { color:${S.textFaint}; }
         select option { background:${S.bgLow}; color:${S.text}; }
-
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);} }
-        @keyframes pulse { 0%,100%{opacity:0.3;}50%{opacity:0.8;} }
-
+        @keyframes pulse  { 0%,100%{opacity:0.3;}50%{opacity:0.8;} }
         @media(max-width:1024px){
           .hero-grid{grid-template-columns:1fr!important;gap:48px!important;}
           .for-designers-grid{grid-template-columns:1fr!important;gap:40px!important;}
@@ -194,14 +177,14 @@ export default function App() {
         }
       `}</style>
 
-      {/* ── Logout confirmation modal ── */}
+      {/* ── Logout confirmation ── */}
       {showLogoutConfirm && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: '32px 28px', maxWidth: 360, width: '100%', borderRadius: S.radiusLg, textAlign: 'center' }}>
             <Hl style={{ fontSize: 20, marginBottom: 10 }}>Sign out?</Hl>
             <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>Are you sure you want to sign out of Accra Creatives Hub?</Body>
             <div style={{ display: 'flex', gap: 12 }}>
-              <Btn variant="ghost" full onClick={() => setShowLogoutConfirm(false)}>Cancel</Btn>
+              <Btn variant="ghost"  full onClick={() => setShowLogoutConfirm(false)}>Cancel</Btn>
               <Btn variant="danger" full onClick={confirmLogout}>Sign Out</Btn>
             </div>
           </div>
@@ -308,8 +291,8 @@ export default function App() {
       {/* ── Stats bar ── */}
       <section style={{ background: S.surface, padding: '32px 40px', borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}` }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 20, opacity: 0.9 }}>
-            <img src="/logo.png" alt="Accra Creatives Hub" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+            <img src="/logo.png" alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             <Lbl style={{ margin: 0, color: S.gold }}>Platform Overview</Lbl>
           </div>
           <div className="platform-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: S.borderFaint }}>
@@ -354,9 +337,10 @@ export default function App() {
                 Search
               </button>
             </div>
+            {/* ── FIX: Correct categories ── */}
             <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap', borderRadius: S.radiusSm, overflow: 'hidden' }}>
-              {cats.map(c => (
-                <button key={c} onClick={() => setCategory(c)} style={{ background: category === c ? S.gold : S.surface, color: category === c ? S.onPrimary : S.textMuted, border: 'none', padding: '12px 16px', fontFamily: S.headline, fontSize: 9, letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.2s', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              {CATS.map(c => (
+                <button key={c} onClick={() => setCategory(c)} style={{ background: category === c ? S.gold : S.surface, color: category === c ? S.onPrimary : S.textMuted, border: 'none', padding: '12px 14px', fontFamily: S.headline, fontSize: 9, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.2s', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {c}
                 </button>
               ))}
@@ -372,7 +356,6 @@ export default function App() {
               <DesignerCard key={d.id} designer={d} onView={d => openOverlay(() => setSelectedDesigner(d))} onHire={d => openOverlay(() => setBriefDesigner(d))} />
             ))}
           </div>
-
           {filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '80px 0', color: S.textFaint }}>
               <div style={{ fontFamily: S.headline, fontSize: 24, fontStyle: 'italic', marginBottom: 10 }}>No designers found.</div>
@@ -412,41 +395,43 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── For Designers ── */}
-      <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
-            <div>
-              <Lbl style={{ marginBottom: 16 }}>For Ghanaian Creatives</Lbl>
-              <Hl style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: 300, marginBottom: 16, lineHeight: 1.1 }}>
-                Your talent deserves<br /><em style={{ fontStyle: 'italic', color: S.gold }}>better exposure.</em>
-              </Hl>
-              <GoldLine />
-              <Body style={{ fontSize: 14, marginBottom: 32, lineHeight: 1.9 }}>
-                Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through escrow. Free to join — we only earn when you do.
-              </Body>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn variant="gold" size="lg" onClick={() => openOverlay(() => setShowSignup(true))}>Apply to Join →</Btn>
-                {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>See Analytics Demo</Btn>}
+      {/* ── For Designers — FIX: hidden from logged-in clients ── */}
+      {showForDesigners && (
+        <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+              <div>
+                <Lbl style={{ marginBottom: 16 }}>For Ghanaian Creatives</Lbl>
+                <Hl style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: 300, marginBottom: 16, lineHeight: 1.1 }}>
+                  Your talent deserves<br /><em style={{ fontStyle: 'italic', color: S.gold }}>better exposure.</em>
+                </Hl>
+                <GoldLine />
+                <Body style={{ fontSize: 14, marginBottom: 32, lineHeight: 1.9 }}>
+                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through escrow. Free to join — we only earn when you do.
+                </Body>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <Btn variant="gold" size="lg" onClick={() => openOverlay(() => setShowSignup(true))}>Apply to Join →</Btn>
+                  {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>See Analytics Demo</Btn>}
+                </div>
+              </div>
+              <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
+                {[
+                  { i: '◈', t: 'Free to List',     d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
+                  { i: '◉', t: 'Verified Badge',    d: 'Our editorial board reviews and approves every designer before they go live.' },
+                  { i: '◐', t: 'Secure Escrow',     d: 'Funds are held safely. You always get paid for work that is approved.' },
+                  { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.' },
+                ].map((f, i) => (
+                  <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
+                    <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{f.i}</div>
+                    <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{f.t}</Hl>
+                    <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{f.d}</Body>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
-              {[
-                { i: '◈', t: 'Free to List',     d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
-                { i: '◉', t: 'Verified Badge',    d: 'Our editorial board reviews and approves every designer before they go live.' },
-                { i: '◐', t: 'Secure Escrow',     d: 'Funds are held safely. You always get paid for work that is approved.' },
-                { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.' },
-              ].map((f, i) => (
-                <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
-                  <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{f.i}</div>
-                  <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{f.t}</Hl>
-                  <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{f.d}</Body>
-                </div>
-              ))}
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Footer ── */}
       <footer className="footer-root" style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
@@ -487,20 +472,22 @@ export default function App() {
               ))}
             </div>
 
-            {/* For Designers — FIX: kept global (marketing section, not role-specific) */}
-            <div>
-              <Lbl style={{ marginBottom: 16 }}>For Designers</Lbl>
-              {[
-                { label: 'Apply to Join',   fn: () => openOverlay(() => setShowSignup(true)) },
-                { label: 'Designer Signup', fn: () => openOverlay(() => setShowSignup(true)) },
-                { label: 'For Designers',   fn: () => scrollTo('for-designers')              },
-              ].map(l => (
-                <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
-                  onMouseEnter={(e: any) => (e.target.style.color = S.text)}
-                  onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
-                >{l.label}</div>
-              ))}
-            </div>
+            {/* ── FIX: For Designers column hidden from logged-in clients ── */}
+            {showForDesigners && (
+              <div>
+                <Lbl style={{ marginBottom: 16 }}>For Designers</Lbl>
+                {[
+                  { label: 'Apply to Join',   fn: () => openOverlay(() => setShowSignup(true)) },
+                  { label: 'Designer Signup', fn: () => openOverlay(() => setShowSignup(true)) },
+                  { label: 'For Designers',   fn: () => scrollTo('for-designers')              },
+                ].map(l => (
+                  <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
+                    onMouseEnter={(e: any) => (e.target.style.color = S.text)}
+                    onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
+                  >{l.label}</div>
+                ))}
+              </div>
+            )}
 
             {/* Company */}
             <div>
@@ -520,14 +507,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Copyright bar */}
           <div style={{ borderTop: `1px solid ${S.borderFaint}`, paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <Body style={{ fontSize: 11, margin: 0 }}>
               © {new Date().getFullYear()} Accra Creatives Hub · {REAL_STATS.commission}% commission
-              {' · '}
-              <span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Terms</span>
-              {' · '}
-              <span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Privacy</span>
+              {' · '}<span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Terms</span>
+              {' · '}<span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Privacy</span>
             </Body>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map(s => (
