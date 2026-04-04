@@ -1,6 +1,5 @@
 // ── src/lib/constants.ts ──
 // Single source of truth — import from here everywhere.
-// Never define categories inline in components.
 
 export const CATEGORIES = [
   'Logo Design',
@@ -22,4 +21,22 @@ export const ROLE_REDIRECT: Record<Role, string> = {
   client:   '/welcome',
   designer: '/apply-designer',
   admin:    '/',
+}
+
+// ── Legacy category normalizer ──
+// If old data in Supabase uses "Flyer & Social Media",
+// this maps it to the correct split category.
+// Import and use this wherever you read designer.category from DB.
+export const normalizeCategory = (raw: string): string => {
+  const map: Record<string, string> = {
+    'flyer & social media':  'Flyer Design',
+    'flyer and social media': 'Flyer Design',
+    'social media':          'Social Media Design',
+    'ui/ux':                 'UI/UX Design',
+    'uiux':                  'UI/UX Design',
+    'motion':                'Motion Graphics',
+    'branding':              'Business Branding',
+    'logo':                  'Logo Design',
+  }
+  return map[raw.toLowerCase()] ?? raw
 }
