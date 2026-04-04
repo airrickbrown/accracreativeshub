@@ -8,9 +8,14 @@ import { signUpUser, signInUser, signInWithGoogle } from '../lib/auth'
 interface AuthModalProps {
   onClose: () => void
   defaultTab?: 'login' | 'signup'
+  defaultRole?: 'client' | 'designer'
 }
 
-export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalProps) {
+export default function AuthModal({
+  onClose,
+  defaultTab = 'login',
+  defaultRole = 'client',
+}: AuthModalProps) {
   const [tab, setTab] = useState(defaultTab)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -23,19 +28,20 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
     email: '',
     password: '',
     fullName: '',
-    role: 'client',
+    role: defaultRole,
   })
 
   const f = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
-    setForm({ email: '', password: '', fullName: '', role: 'client' })
+    setTab(defaultTab)
+    setForm({ email: '', password: '', fullName: '', role: defaultRole })
     setError('')
     setSuccess('')
     setShowPw(false)
     setAwaitingVerification(false)
     setSignedUpEmail('')
-  }, [tab])
+  }, [defaultTab, defaultRole])
 
   const handleLogin = async () => {
     if (!form.email) {
@@ -125,10 +131,11 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
 
       setSignedUpEmail(form.email)
       setAwaitingVerification(true)
+
       setSuccess(
         form.role === 'designer'
-          ? `Application submitted! A verification email has been sent to ${form.email}. Check your inbox and spam folder. You must verify before logging in.`
-          : `Account created! A verification email has been sent to ${form.email}. Check your inbox and spam folder. Click the link to verify, then log in.`
+          ? `Designer account created. A verification email has been sent to ${form.email}. Verify your email first, then you’ll continue to complete your application.`
+          : `Account created. A verification email has been sent to ${form.email}. Check your inbox and spam folder, then verify and log in.`
       )
     } catch (err: any) {
       setError(err?.message || 'Signup failed. Please try again.')
@@ -169,6 +176,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
   const handleGoogle = async () => {
     setGoogleLoading(true)
     setError('')
+    setSuccess('')
 
     try {
       await signInWithGoogle(form.role as 'client' | 'designer')
@@ -284,7 +292,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
                 <br />
                 <strong style={{ color: S.gold }}>{signedUpEmail || form.email}</strong>
                 <br /><br />
-                Click the link in that email to verify your account, then come back here to log in.
+                Click the link in that email to verify your account, then come back here to continue.
                 <br /><br />
                 <span style={{ color: S.textFaint, fontSize: 12 }}>
                   Can't find it? Check your <strong style={{ color: S.text }}>spam / junk</strong> folder.
@@ -359,6 +367,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
               <Lbl style={{ marginBottom: 10 }}>
                 {tab === 'login' ? 'Log in as' : 'Sign up as'}
               </Lbl>
+
               <div className="auth-role-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
                   { k: 'client', l: 'Client', sub: 'I need design work' },
@@ -419,7 +428,9 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
               </svg>
               {googleLoading
                 ? 'Redirecting to Google...'
-                : `Continue with Google as ${form.role === 'designer' ? 'Designer' : 'Client'}`}
+                : tab === 'signup' && form.role === 'designer'
+                  ? 'Continue with Google to Apply as Designer'
+                  : `Continue with Google as ${form.role === 'designer' ? 'Designer' : 'Client'}`}
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -448,6 +459,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
               <Lbl style={{ marginBottom: 8 }}>
                 Password {tab === 'signup' && <span style={{ color: S.textFaint, fontSize: 9 }}>(min 8 characters)</span>}
               </Lbl>
+
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -475,6 +487,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
                   onFocus={(e: any) => (e.target.style.borderColor = S.gold)}
                   onBlur={(e: any) => (e.target.style.borderColor = S.border)}
                 />
+
                 <button
                   onClick={() => setShowPw(v => !v)}
                   style={{
@@ -525,6 +538,7 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
                 <Body style={{ color: S.danger, fontSize: 12, margin: 0, lineHeight: 1.7 }}>
                   {error}
                 </Body>
+
                 {(error.includes('verify') || error.includes('confirm')) && (
                   <button
                     onClick={handleResend}
@@ -571,7 +585,9 @@ export default function AuthModal({ onClose, defaultTab = 'login' }: AuthModalPr
                 ? 'Please wait...'
                 : tab === 'login'
                   ? `Log In as ${form.role === 'designer' ? 'Designer' : 'Client'} →`
-                  : `Create ${form.role === 'designer' ? 'Designer' : 'Client'} Account →`}
+                  : form.role === 'designer'
+                    ? 'Create Designer Account →'
+                    : 'Create Client Account →'}
             </Btn>
 
             {tab === 'login' && (
