@@ -15,7 +15,6 @@ interface NavProps {
   onSignOut:      () => void
   scrolled:       boolean
   user:           any
-  // ── FIX: isAdmin prop controls admin button visibility ──
   isAdmin?:       boolean
 }
 
@@ -34,7 +33,9 @@ export default function Nav({
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  useEffect(() => { if (!isMobile) setMobileOpen(false) }, [isMobile])
+  useEffect(() => {
+    if (!isMobile) setMobileOpen(false)
+  }, [isMobile])
 
   const closeMobileMenu = () => setMobileOpen(false)
 
@@ -49,7 +50,19 @@ export default function Nav({
     <button
       onClick={() => setMobileOpen(v => !v)}
       aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-      style={{ background: 'none', border: `1px solid ${S.borderFaint}`, color: S.text, width: 44, height: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, cursor: 'pointer', flexShrink: 0 }}
+      style={{
+        background: 'none',
+        border: `1px solid ${S.borderFaint}`,
+        color: S.text,
+        width: 44,
+        height: 44,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 10,
+        cursor: 'pointer',
+        flexShrink: 0,
+      }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
         <span style={{ width: 18, height: 1.5, background: S.text, transition: 'all 0.2s ease', transform: mobileOpen ? 'translateY(5.5px) rotate(45deg)' : 'none', display: 'block' }} />
@@ -60,15 +73,70 @@ export default function Nav({
   )
 
   return (
-    <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: scrolled ? 'rgba(19,19,19,0.95)' : 'rgba(19,19,19,0.98)', borderBottom: `1px solid ${scrolled ? S.borderFaint : 'rgba(77,70,55,0.14)'}`, backdropFilter: 'blur(20px)', transition: 'all 0.3s ease' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 16px' : '0 40px', minHeight: isMobile ? 64 : 68, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-
-        {/* Logo — FIX: whiteSpace nowrap, flexShrink 0, smaller font on mobile */}
+    <header
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        background: scrolled ? 'rgba(19,19,19,0.95)' : 'rgba(19,19,19,0.98)',
+        borderBottom: `1px solid ${scrolled ? S.borderFaint : 'rgba(77,70,55,0.14)'}`,
+        backdropFilter: 'blur(20px)',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          padding: isMobile ? '0 16px' : '0 40px',
+          minHeight: isMobile ? 68 : 72,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        {/* Brand */}
         <div
           onClick={() => { onMarketplace(); closeMobileMenu() }}
-          style={{ fontFamily: S.headline, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', cursor: 'pointer', lineHeight: 1.05, fontSize: isMobile ? 11 : 20, whiteSpace: 'nowrap', flexShrink: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? 8 : 10,
+            cursor: 'pointer',
+            flexShrink: 1,
+            minWidth: 0,
+          }}
         >
-          ACCRA CREATIVES HUB
+          <img
+            src="/logo.png"
+            alt="Accra Creatives Hub"
+            style={{
+              width: isMobile ? 28 : 34,
+              height: isMobile ? 28 : 34,
+              objectFit: 'contain',
+              borderRadius: 8,
+              flexShrink: 0,
+            }}
+          />
+
+          <div
+            style={{
+              fontFamily: S.headline,
+              fontWeight: 700,
+              color: S.gold,
+              letterSpacing: isMobile ? '-0.01em' : '-0.02em',
+              lineHeight: 1.02,
+              fontSize: isMobile ? 13 : 22,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            ACCRA CREATIVES HUB
+          </div>
         </div>
 
         {/* Desktop nav */}
@@ -76,8 +144,24 @@ export default function Nav({
           <>
             <nav style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
               {navLinks.map(l => (
-                <button key={l.key} onClick={l.fn} onMouseEnter={() => setHovered(l.key)} onMouseLeave={() => setHovered(null)}
-                  style={{ background: 'none', border: 'none', fontFamily: S.headline, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: hovered === l.key ? S.text : S.textMuted, cursor: 'pointer', padding: 0, transition: 'color 0.2s ease', whiteSpace: 'nowrap' }}
+                <button
+                  key={l.key}
+                  onClick={l.fn}
+                  onMouseEnter={() => setHovered(l.key)}
+                  onMouseLeave={() => setHovered(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontFamily: S.headline,
+                    fontSize: 11,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: hovered === l.key ? S.text : S.textMuted,
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'color 0.2s ease',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {l.label}
                 </button>
@@ -87,34 +171,91 @@ export default function Nav({
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {user ? (
                 <>
-                  <button onClick={onMessages}
-                    style={{ background: 'none', border: `1px solid ${S.borderFaint}`, fontFamily: S.headline, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: S.textMuted, cursor: 'pointer', padding: '10px 16px', transition: 'all 0.2s ease', borderRadius: 10 }}
+                  <button
+                    onClick={onMessages}
+                    style={{
+                      background: 'none',
+                      border: `1px solid ${S.borderFaint}`,
+                      fontFamily: S.headline,
+                      fontSize: 11,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: S.textMuted,
+                      cursor: 'pointer',
+                      padding: '10px 16px',
+                      transition: 'all 0.2s ease',
+                      borderRadius: 10,
+                    }}
                     onMouseEnter={(e: any) => { e.target.style.color = S.text; e.target.style.borderColor = S.border }}
                     onMouseLeave={(e: any) => { e.target.style.color = S.textMuted; e.target.style.borderColor = S.borderFaint }}
-                  >Messages</button>
+                  >
+                    Messages
+                  </button>
 
-                  {/* ── FIX: Admin button ONLY shows if isAdmin === true ── */}
                   {isAdmin && (
-                    <button onClick={onAdmin}
-                      style={{ background: 'none', border: 'none', fontFamily: S.headline, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: S.textMuted, cursor: 'pointer', transition: 'color 0.2s ease' }}
+                    <button
+                      onClick={onAdmin}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontFamily: S.headline,
+                        fontSize: 11,
+                        letterSpacing: '0.15em',
+                        textTransform: 'uppercase',
+                        color: S.textMuted,
+                        cursor: 'pointer',
+                        transition: 'color 0.2s ease',
+                      }}
                       onMouseEnter={(e: any) => (e.target.style.color = S.text)}
                       onMouseLeave={(e: any) => (e.target.style.color = S.textMuted)}
-                    >Admin</button>
+                    >
+                      Admin
+                    </button>
                   )}
 
-                  <button onClick={onSignOut}
-                    style={{ background: 'none', border: `1px solid ${S.borderFaint}`, fontFamily: S.headline, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: S.textMuted, cursor: 'pointer', padding: '10px 16px', transition: 'all 0.2s ease', borderRadius: 10 }}
+                  <button
+                    onClick={onSignOut}
+                    style={{
+                      background: 'none',
+                      border: `1px solid ${S.borderFaint}`,
+                      fontFamily: S.headline,
+                      fontSize: 11,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: S.textMuted,
+                      cursor: 'pointer',
+                      padding: '10px 16px',
+                      transition: 'all 0.2s ease',
+                      borderRadius: 10,
+                    }}
                     onMouseEnter={(e: any) => { e.target.style.color = S.danger; e.target.style.borderColor = S.danger }}
                     onMouseLeave={(e: any) => { e.target.style.color = S.textMuted; e.target.style.borderColor = S.borderFaint }}
-                  >Sign Out</button>
+                  >
+                    Sign Out
+                  </button>
                 </>
               ) : (
                 <>
-                  <button onClick={onLogin}
-                    style={{ background: 'none', border: `1px solid ${S.borderFaint}`, fontFamily: S.headline, fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: S.textMuted, cursor: 'pointer', padding: '10px 16px', transition: 'all 0.2s ease', borderRadius: 10 }}
+                  <button
+                    onClick={onLogin}
+                    style={{
+                      background: 'none',
+                      border: `1px solid ${S.borderFaint}`,
+                      fontFamily: S.headline,
+                      fontSize: 11,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: S.textMuted,
+                      cursor: 'pointer',
+                      padding: '10px 16px',
+                      transition: 'all 0.2s ease',
+                      borderRadius: 10,
+                    }}
                     onMouseEnter={(e: any) => { e.target.style.color = S.text; e.target.style.borderColor = S.border }}
                     onMouseLeave={(e: any) => { e.target.style.color = S.textMuted; e.target.style.borderColor = S.borderFaint }}
-                  >Login</button>
+                  >
+                    Login
+                  </button>
                   <Btn variant="gold" size="sm" onClick={onSignup}>Designer Signup</Btn>
                 </>
               )}
@@ -130,9 +271,24 @@ export default function Nav({
         <div style={{ borderTop: `1px solid ${S.borderFaint}`, background: 'rgba(8,8,8,0.98)', padding: '14px 16px 18px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {navLinks.map(l => (
-              <button key={l.key} onClick={() => { l.fn(); closeMobileMenu() }}
-                style={{ background: 'none', border: 'none', color: S.text, textAlign: 'left', padding: '12px 2px', fontFamily: S.headline, fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
-              >{l.label}</button>
+              <button
+                key={l.key}
+                onClick={() => { l.fn(); closeMobileMenu() }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: S.text,
+                  textAlign: 'left',
+                  padding: '12px 2px',
+                  fontFamily: S.headline,
+                  fontSize: 12,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                {l.label}
+              </button>
             ))}
             <div style={{ height: 1, background: S.borderFaint, margin: '4px 0 8px' }} />
             {user ? (
@@ -145,8 +301,8 @@ export default function Nav({
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <Btn variant="ghost" full onClick={() => { onLogin();  closeMobileMenu() }}>Login</Btn>
-                <Btn variant="gold"  full onClick={() => { onSignup(); closeMobileMenu() }}>Designer Signup</Btn>
+                <Btn variant="ghost" full onClick={() => { onLogin(); closeMobileMenu() }}>Login</Btn>
+                <Btn variant="gold" full onClick={() => { onSignup(); closeMobileMenu() }}>Designer Signup</Btn>
               </div>
             )}
           </div>

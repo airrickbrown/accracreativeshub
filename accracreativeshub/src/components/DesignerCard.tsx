@@ -11,6 +11,92 @@ interface DesignerCardProps {
 export default function DesignerCard({ designer, onView, onHire }: DesignerCardProps) {
   const [hov, setHov] = useState(false)
 
+  const trustBadge = designer.verified ? (
+    <div
+      title="Verified by Accra Creatives Hub"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        background: 'rgba(8,8,8,0.78)',
+        border: `1px solid rgba(201,168,76,0.28)`,
+        padding: '5px 9px',
+        borderRadius: 999,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <span
+        style={{
+          width: 16,
+          height: 16,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          background: S.gold,
+          color: S.onPrimary,
+          fontSize: 10,
+          fontWeight: 900,
+          lineHeight: 1,
+          flexShrink: 0,
+        }}
+      >
+        ✓
+      </span>
+      <span
+        style={{
+          color: S.gold,
+          fontSize: 8,
+          fontFamily: S.body,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          fontWeight: 700,
+        }}
+      >
+        Verified
+      </span>
+    </div>
+  ) : (
+    <div
+      title="Awaiting review"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        background: 'rgba(8,8,8,0.78)',
+        border: `1px solid ${S.borderFaint}`,
+        padding: '5px 9px',
+        borderRadius: 999,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: S.textFaint,
+          flexShrink: 0,
+          opacity: 0.9,
+        }}
+      />
+      <span
+        style={{
+          color: S.textFaint,
+          fontSize: 8,
+          fontFamily: S.body,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          fontWeight: 700,
+        }}
+      >
+        Under Review
+      </span>
+    </div>
+  )
+
   return (
     <div
       onMouseEnter={() => setHov(true)}
@@ -78,45 +164,7 @@ export default function DesignerCard({ designer, onView, onHire }: DesignerCardP
             )}
           </div>
 
-          {designer.verified && (
-            <div
-              title="Verified by Accra Creatives Hub"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'rgba(8,8,8,0.72)',
-                border: `1px solid ${S.borderFaint}`,
-                padding: '5px 8px',
-                borderRadius: 999,
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <img
-                src="/logo.png"
-                alt="Accra Creatives Hub verified"
-                style={{
-                  width: 14,
-                  height: 14,
-                  objectFit: 'contain',
-                  borderRadius: 999,
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                style={{
-                  color: S.gold,
-                  fontSize: 8,
-                  fontFamily: S.body,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Verified
-              </span>
-            </div>
-          )}
+          {trustBadge}
         </div>
 
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px' }}>
