@@ -1,8 +1,12 @@
 // ── src/App.tsx ──
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
+import { ALL_CATS } from './lib/constants'
 import Nav from './components/Nav'
+import AuthCallback from './components/AuthCallback'
+import ClientWelcome from './components/ClientWelcome'
 import DesignerCard from './components/DesignerCard'
 import DesignerProfile from './components/DesignerProfile'
 import BriefBuilder from './components/BriefBuilder'
@@ -17,7 +21,8 @@ import AboutPage from './components/AboutPage'
 import AdminRoute from './components/AdminRoute'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
-import AuthCallback from './components/AuthCallback'
+// @ts-ignore
+import { supabase } from './lib/supabase'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 
@@ -35,9 +40,7 @@ const REAL_STATS = {
   avgRating:       Number((DESIGNERS.reduce((s, d) => s + d.rating, 0) / DESIGNERS.length).toFixed(1)),
 }
 
-// ── FIX: Correct categories aligned with marketplace structure ──
-  const CATS = ['All', 'Logo Design', 'Business Branding', 'Flyer Design', 'Social Media Design', 'UI/UX Design', 'Motion Graphics']
-  export default function App() {
+export default function App() {
   const [scrolled, setScrolled]                 = useState(false)
   const [heroIn, setHeroIn]                     = useState(false)
   const [category, setCategory]                 = useState('All')
@@ -55,20 +58,20 @@ const REAL_STATS = {
   const [showContact, setShowContact]           = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-//  const [callbackDone, setCallbackDone] = useState(false)
+  const [showWelcome, setShowWelcome]           = useState(false)
+  const [currentPath, setCurrentPath]           = useState(window.location.pathname)
 
-  const { user, signOut, isAdmin,  isDesigner ,refreshUser, } = useAuth()
+  const { user, signOut, isAdmin, isDesigner, isClient, loading } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
-  // ── FIX: "For Designers" section only shows to non-logged-in users or designers ──
-  // Clients don't need to see designer recruitment content
+  // "For Designers" section — only for non-logged-in users, designers, and admins
   const showForDesigners = !user || isDesigner || isAdmin
 
-  const openOverlay = (fn: () => void) => {
+  const openOverlay = useCallback((fn: () => void) => {
     window.history.pushState({ overlay: true }, '')
     fn()
-  }
+  }, [])
 
   const closeAll = useCallback(() => {
     setSelectedDesigner(null); setBriefDesigner(null)
@@ -77,26 +80,44 @@ const REAL_STATS = {
     setShowAnalytics(null);    setShowResume(null)
     setShowTerms(false);       setShowContact(false)
     setShowAbout(false);       setShowLogoutConfirm(false)
+    setShowWelcome(false)
   }, [])
 
-  const handleLogout = () => setShowLogoutConfirm(true)
+  const handleLogout = useCallback(() => setShowLogoutConfirm(true), [])
 
-  const confirmLogout = async () => {
+  const confirmLogout = useCallback(async () => {
     setShowLogoutConfirm(false)
     closeAll()
     await signOut()
     window.history.replaceState({}, '', '/')
-  }
+    setCurrentPath('/')
+  }, [closeAll, signOut])
+
+  // ── Path routing ──
+  useEffect(() => {
+    const handlePathChange = () => setCurrentPath(window.location.pathname)
+    window.addEventListener('popstate', handlePathChange)
+    return () => window.removeEventListener('popstate', handlePathChange)
+  }, [])
+
+  useEffect(() => {
+    if (currentPath === '/welcome' && user && isClient) {
+      setShowWelcome(true)
+    } else if (currentPath === '/apply-designer' && user && isDesigner) {
+      setShowSignup(true)
+    }
+  }, [currentPath, user, isClient, isDesigner])
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.slice(1))
     if (hashParams.get('access_token')) {
-      setShowAuth(false)
       window.history.replaceState({}, '', '/')
     }
     setTimeout(() => setHeroIn(true), 100)
+
     const onScroll   = () => setScrolled(window.scrollY > 60)
-    const onPopState = () => closeAll()
+    const onPopState = () => { closeAll(); setCurrentPath(window.location.pathname) }
+
     window.addEventListener('scroll', onScroll)
     window.addEventListener('popstate', onPopState)
     return () => {
@@ -105,9 +126,9 @@ const REAL_STATS = {
     }
   }, [closeAll])
 
-  // ── Secret admin URL ──
-  if (window.location.pathname === '/admin-sovereign-2024') {
-    return <AdminRoute onClose={() => { window.history.pushState({}, '', '/'); window.location.reload() }} />
+  // ── Secret admin route ──
+  if (currentPath === '/admin-sovereign-2024') {
+    return <AdminRoute onClose={() => { window.history.pushState({}, '', '/'); setCurrentPath('/') }} />
   }
 
   const filtered = activeDesigners.filter((d: any) => {
@@ -124,7 +145,7 @@ const REAL_STATS = {
     onAdmin:        isAdmin ? () => openOverlay(() => setShowAdmin(true)) : () => {},
     onSignup:       () => openOverlay(() => setShowSignup(true)),
     onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)),
-    onMarketplace:  () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    onMarketplace:  () => { closeAll(); window.scrollTo({ top: 0, behavior: 'smooth' }) },
     onHowItWorks:   () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
     onLogin:        () => openOverlay(() => setShowAuth(true)),
@@ -136,10 +157,10 @@ const REAL_STATS = {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
-        html, body, #root { min-height: 100%; background: #080808; }
-        html, body { margin:0; padding:0; overflow-x:hidden; }
-        body { overscroll-behavior-y: none; }
-        input, select, textarea { font-size: 16px !important; }
+        html,body,#root { min-height:100%; background:#080808; }
+        html,body { margin:0; padding:0; overflow-x:hidden; }
+        body { overscroll-behavior-y:none; }
+        input,select,textarea { font-size:16px!important; }
         ::-webkit-scrollbar { width:3px; height:3px; }
         ::-webkit-scrollbar-track { background:${S.bgDeep}; }
         ::-webkit-scrollbar-thumb { background:${S.gold}30; }
@@ -147,10 +168,7 @@ const REAL_STATS = {
         select option { background:${S.bgLow}; color:${S.text}; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);} }
         @keyframes pulse  { 0%,100%{opacity:0.3;}50%{opacity:0.8;} }
-        @media(max-width:1024px){
-          .hero-grid{grid-template-columns:1fr!important;gap:48px!important;}
-          .for-designers-grid{grid-template-columns:1fr!important;gap:40px!important;}
-        }
+        @media(max-width:1024px){ .hero-grid{grid-template-columns:1fr!important;gap:48px!important;} .for-designers-grid{grid-template-columns:1fr!important;} }
         @media(max-width:768px){
           .hero-grid{grid-template-columns:1fr!important;gap:36px!important;padding:64px 20px!important;}
           .hero-portrait{display:none!important;}
@@ -174,7 +192,9 @@ const REAL_STATS = {
           .stats-row{flex-direction:column!important;align-items:flex-start!important;}
         }
       `}</style>
-      <AuthCallback onComplete={refreshUser} />
+
+      {/* ── AuthCallback MUST be first — processes Google OAuth tokens ── */}
+      <AuthCallback />
 
       {/* ── Logout confirmation ── */}
       {showLogoutConfirm && (
@@ -188,6 +208,14 @@ const REAL_STATS = {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Welcome screen for new clients ── */}
+      {showWelcome && isClient && (
+        <ClientWelcome
+          onBrowse={() => { setShowWelcome(false); scrollTo('marketplace') }}
+          onMessages={() => { setShowWelcome(false); openOverlay(() => setShowChat(true)) }}
+        />
       )}
 
       {/* ── Overlays ── */}
@@ -336,9 +364,10 @@ const REAL_STATS = {
                 Search
               </button>
             </div>
-            {/* ── FIX: Correct categories ── */}
+
+            {/* ── ALL_CATS from constants — includes Motion Graphics ── */}
             <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap', borderRadius: S.radiusSm, overflow: 'hidden' }}>
-              {CATS.map(c => (
+              {ALL_CATS.map(c => (
                 <button key={c} onClick={() => setCategory(c)} style={{ background: category === c ? S.gold : S.surface, color: category === c ? S.onPrimary : S.textMuted, border: 'none', padding: '12px 14px', fontFamily: S.headline, fontSize: 9, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.2s', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {c}
                 </button>
@@ -347,7 +376,9 @@ const REAL_STATS = {
           </div>
 
           <Body style={{ fontSize: 12, color: S.textFaint, marginBottom: 16 }}>
-            {filtered.length} designer{filtered.length !== 1 ? 's' : ''} found{category !== 'All' ? ` in ${category}` : ''}{search ? ` matching "${search}"` : ''}
+            {filtered.length} designer{filtered.length !== 1 ? 's' : ''} found
+            {category !== 'All' ? ` in ${category}` : ''}
+            {search ? ` matching "${search}"` : ''}
           </Body>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
@@ -355,26 +386,24 @@ const REAL_STATS = {
               <DesignerCard key={d.id} designer={d} onView={d => openOverlay(() => setSelectedDesigner(d))} onHire={d => openOverlay(() => setBriefDesigner(d))} />
             ))}
           </div>
-           {filtered.length === 0 && (
-  <div style={{ textAlign: 'center', padding: '80px 0' }}>
-       <div style={{ color: S.gold, fontSize: 36, marginBottom: 16 }}>◈</div>
-      <div style={{ fontFamily: S.headline, fontSize: 22, fontStyle: 'italic', color: S.textFaint, marginBottom: 12 }}>
-         {category !== 'All' && search === ''
-          ? `No ${category} designers yet.`
-          : 'No designers found.'}
-       </div>
-     <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8 }}>
-        {category !== 'All' && search === ''
-         ? `We're growing our ${category} roster. Browse all our verified designers in the meantime.`
-          : 'Try a different search term or category.'}
-     </Body>
-       {category !== 'All' && (
-        <Btn variant="gold" onClick={() => setCategory('All')}>
-          Browse All Designers →
-       </Btn>
-      )}
-    </div>
-  )}
+
+          {/* ── Better empty state ── */}
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+              <div style={{ color: S.gold, fontSize: 36, marginBottom: 16 }}>◈</div>
+              <Hl style={{ fontSize: 22, fontStyle: 'italic', fontWeight: 300, color: S.textFaint, marginBottom: 12 }}>
+                {category !== 'All' && !search ? `No ${category} designers yet.` : 'No designers found.'}
+              </Hl>
+              <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8, maxWidth: 420, margin: '0 auto 24px' }}>
+                {category !== 'All' && !search
+                  ? `We're growing our ${category} roster. Browse all our verified designers in the meantime.`
+                  : 'Try a different search term or category.'}
+              </Body>
+              {category !== 'All' && (
+                <Btn variant="gold" onClick={() => setCategory('All')}>Browse All Designers →</Btn>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -388,8 +417,8 @@ const REAL_STATS = {
         <div className="process-grid" style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
           {[
             { n: '01', i: '▣', t: 'Build Your Brief',     d: 'Fill out our structured brief form — project type, colours, references, and budget.', action: () => scrollTo('marketplace') },
-            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held in escrow until you approve the final delivery.', action: null },
-            { n: '03', i: '◉', t: 'Approve & Pay',        d: "When satisfied, approve the delivery. Funds are released instantly. Leave a review to help the community.", action: null },
+            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held in escrow until you approve.', action: null },
+            { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.', action: null },
           ].map((s, i) => (
             <div key={i} onClick={s.action || undefined} style={{ background: S.bgLow, padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
               onMouseEnter={(e: any) => { if (s.action) e.currentTarget.style.background = S.surface }}
@@ -408,7 +437,7 @@ const REAL_STATS = {
         </div>
       </section>
 
-      {/* ── For Designers — FIX: hidden from logged-in clients ── */}
+      {/* ── For Designers — hidden from logged-in clients ── */}
       {showForDesigners && (
         <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -424,7 +453,7 @@ const REAL_STATS = {
                 </Body>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <Btn variant="gold" size="lg" onClick={() => openOverlay(() => setShowSignup(true))}>Apply to Join →</Btn>
-                  {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>See Analytics Demo</Btn>}
+                  {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>}
                 </div>
               </div>
               <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
@@ -433,11 +462,11 @@ const REAL_STATS = {
                   { i: '◉', t: 'Verified Badge',    d: 'Our editorial board reviews and approves every designer before they go live.' },
                   { i: '◐', t: 'Secure Escrow',     d: 'Funds are held safely. You always get paid for work that is approved.' },
                   { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.' },
-                ].map((f, i) => (
+                ].map((card, i) => (
                   <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
-                    <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{f.i}</div>
-                    <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{f.t}</Hl>
-                    <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{f.d}</Body>
+                    <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{card.i}</div>
+                    <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{card.t}</Hl>
+                    <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{card.d}</Body>
                   </div>
                 ))}
               </div>
@@ -451,13 +480,12 @@ const REAL_STATS = {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
 
-            {/* Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                 <img src="/logo.png" alt="" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 8 }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
-              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana&apos;s first curated marketplace for verified graphic designers. Secure escrow. Real reviews. Built for the creative economy.</Body>
+              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana&apos;s first curated marketplace for verified graphic designers. Secure escrow. Real reviews.</Body>
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {[{ v: REAL_STATS.designerCount, l: 'Designers' }, { v: REAL_STATS.totalOrders, l: 'Orders' }, { v: `${REAL_STATS.avgRating}★`, l: 'Avg Rating' }].map(s => (
                   <div key={s.l}>
@@ -468,12 +496,10 @@ const REAL_STATS = {
               </div>
             </div>
 
-            {/* Platform */}
             <div>
               <Lbl style={{ marginBottom: 16 }}>Platform</Lbl>
               {[
                 { label: 'Marketplace',  fn: () => scrollTo('marketplace')  },
-                { label: 'Designers',    fn: () => scrollTo('marketplace')  },
                 { label: 'How It Works', fn: () => scrollTo('how-it-works') },
                 { label: 'Messages',     fn: () => user ? openOverlay(() => setShowChat(true)) : openOverlay(() => setShowAuth(true)) },
                 ...(isAdmin ? [{ label: 'Admin Panel', fn: () => openOverlay(() => setShowAdmin(true)) }] : []),
@@ -485,14 +511,13 @@ const REAL_STATS = {
               ))}
             </div>
 
-            {/* ── FIX: For Designers column hidden from logged-in clients ── */}
+            {/* For Designers column — hidden from logged-in clients */}
             {showForDesigners && (
               <div>
                 <Lbl style={{ marginBottom: 16 }}>For Designers</Lbl>
                 {[
                   { label: 'Apply to Join',   fn: () => openOverlay(() => setShowSignup(true)) },
-                  { label: 'Designer Signup', fn: () => openOverlay(() => setShowSignup(true)) },
-                  { label: 'For Designers',   fn: () => scrollTo('for-designers')              },
+                  { label: 'How It Works',    fn: () => scrollTo('for-designers')              },
                 ].map(l => (
                   <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                     onMouseEnter={(e: any) => (e.target.style.color = S.text)}
@@ -502,12 +527,10 @@ const REAL_STATS = {
               </div>
             )}
 
-            {/* Company */}
             <div>
               <Lbl style={{ marginBottom: 16 }}>Company</Lbl>
               {[
                 { label: 'About',          fn: () => openOverlay(() => setShowAbout(true))   },
-                { label: 'How It Works',   fn: () => scrollTo('how-it-works')                },
                 { label: 'Contact Us',     fn: () => openOverlay(() => setShowContact(true)) },
                 { label: 'Terms',          fn: () => openOverlay(() => setShowTerms(true))   },
                 { label: 'Privacy Policy', fn: () => openOverlay(() => setShowTerms(true))   },
