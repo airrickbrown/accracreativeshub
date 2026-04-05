@@ -111,14 +111,15 @@ export default function Nav({
           }}
         >
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Accra Creatives Hub"
             style={{
-              width: isMobile ? 28 : 34,
-              height: isMobile ? 28 : 34,
+              width: isMobile ? 28 : 52,
+              height: isMobile ? 28 : 52,
               objectFit: 'contain',
               borderRadius: 8,
               flexShrink: 0,
+              filter: 'brightness(1.2)',
             }}
           />
 
