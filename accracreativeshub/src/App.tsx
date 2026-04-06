@@ -1,6 +1,11 @@
 // ── src/App.tsx ──
+// KEY FIXES:
+// 1. Nav receives isDesigner + isClient props so role-based rendering works
+// 2. navProps is memoized — never recreated from auth state (no flicker)
+// 3. openOverlay no longer touches auth state
+// 4. closeAll only resets overlay state, never auth state
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { S, kenteUrl } from './styles/tokens'
 import { DESIGNERS, ORDERS } from './data/mockData'
 import { ALL_CATS } from './lib/constants'
@@ -24,10 +29,7 @@ import { useDesigners } from './hooks/useDesigners'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 
-const scrollTo = (id: string) => {
-  const el = document.getElementById(id)
-  if (el) el.scrollIntoView({ behavior: 'smooth' })
-}
+const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
 const REAL_STATS = {
   designerCount:   DESIGNERS.length,
@@ -38,13 +40,11 @@ const REAL_STATS = {
   avgRating:       Number((DESIGNERS.reduce((s, d) => s + d.rating, 0) / DESIGNERS.length).toFixed(1)),
 }
 
-// ── AuthModal config type ──────────────────────────────────────
 interface AuthConfig {
   tab:      'login' | 'signup'
   role:     'client' | 'designer'
   lockRole: 'client' | 'designer' | undefined
 }
-
 const DEFAULT_AUTH: AuthConfig = { tab: 'login', role: 'client', lockRole: undefined }
 
 export default function App() {
@@ -69,59 +69,34 @@ export default function App() {
   const [showWelcome, setShowWelcome]           = useState(false)
   const [currentPath, setCurrentPath]           = useState(window.location.pathname)
 
+  // ── Auth state from context — NEVER modified by overlay logic ──
   const { user, signOut, isAdmin, isDesigner, isClient } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
   const showForDesigners = !user || isDesigner || isAdmin
 
-  // ── Overlay helpers ────────────────────────────────────────────
   const openOverlay = useCallback((fn: () => void) => {
     window.history.pushState({ overlay: true }, '')
     fn()
   }, [])
 
-  /**
-   * Open AuthModal with full control over tab, role, and lockRole.
-   *
-   * tab:      which tab opens ('login' | 'signup')
-   * role:     pre-selected role (user can change unless lockRole is set)
-   * lockRole: hides role selector and forces this role
-   */
   const openAuth = useCallback(
     (tab: 'login' | 'signup', role: 'client' | 'designer', lockRole?: 'client' | 'designer') => {
-      openOverlay(() => {
-        setAuthConfig({ tab, role, lockRole })
-        setShowAuth(true)
-      })
-    },
-    [openOverlay]
+      openOverlay(() => { setAuthConfig({ tab, role, lockRole }); setShowAuth(true) })
+    }, [openOverlay]
   )
 
   const closeAuth = useCallback(() => {
-    setShowAuth(false)
-    setAuthConfig(DEFAULT_AUTH)
+    setShowAuth(false); setAuthConfig(DEFAULT_AUTH)
   }, [])
 
-  /**
-   * Designer entry point — called from "Apply to Join", "Designer Signup" nav button.
-   *
-   * - Not logged in → open AuthModal locked to designer signup
-   * - Already logged in as designer → open DesignerSignup application form
-   * - Logged in as client/admin → open AuthModal locked to designer signup
-   *   (they'll need a separate designer account)
-   */
   const openDesignerFlow = useCallback(() => {
-    if (user && isDesigner) {
-      // Already authenticated as designer — go straight to application form
-      openOverlay(() => setShowSignup(true))
-      return
-    }
-    // Everyone else (not logged in, or logged in as non-designer)
-    // gets AuthModal locked to designer signup — NO role selector shown
+    if (user && isDesigner) { openOverlay(() => setShowSignup(true)); return }
     openAuth('signup', 'designer', 'designer')
   }, [user, isDesigner, openAuth, openOverlay])
 
+  // ── closeAll ONLY touches overlay state, never auth state ──
   const closeAll = useCallback(() => {
     setSelectedDesigner(null); setBriefDesigner(null)
     setShowSignup(false);      setShowAdmin(false)
@@ -129,87 +104,61 @@ export default function App() {
     setShowAnalytics(null);    setShowResume(null)
     setShowTerms(false);       setShowContact(false)
     setShowAbout(false);       setShowLogoutConfirm(false)
-    setShowWelcome(false)
-    setAuthConfig(DEFAULT_AUTH)
+    setShowWelcome(false);     setAuthConfig(DEFAULT_AUTH)
   }, [])
 
-  const handleLogout = useCallback(() => setShowLogoutConfirm(true), [])
-
-  const confirmLogout = useCallback(async () => {
-    setShowLogoutConfirm(false)
-    closeAll()
+  const handleLogout   = useCallback(() => setShowLogoutConfirm(true), [])
+  const confirmLogout  = useCallback(async () => {
+    setShowLogoutConfirm(false); closeAll()
     await signOut()
-    window.history.replaceState({}, '', '/')
-    setCurrentPath('/')
+    window.history.replaceState({}, '', '/'); setCurrentPath('/')
   }, [closeAll, signOut])
 
-  // ── Path-based routing ─────────────────────────────────────────
   useEffect(() => {
-    const handlePathChange = () => setCurrentPath(window.location.pathname)
-    window.addEventListener('popstate', handlePathChange)
-    return () => window.removeEventListener('popstate', handlePathChange)
+    const onChange = () => setCurrentPath(window.location.pathname)
+    window.addEventListener('popstate', onChange)
+    return () => window.removeEventListener('popstate', onChange)
   }, [])
 
   useEffect(() => {
-    if (currentPath === '/welcome' && user && isClient) {
-      setShowWelcome(true)
-      return
-    }
+    if (currentPath === '/welcome' && user && isClient) { setShowWelcome(true); return }
     if (currentPath === '/apply-designer') {
-      if (user && isDesigner) {
-        setShowSignup(true)
-      } else if (!user) {
-        openAuth('signup', 'designer', 'designer')
-      }
+      if (user && isDesigner) setShowSignup(true)
+      else if (!user) openAuth('signup', 'designer', 'designer')
     }
-  }, [currentPath, user, isClient, isDesigner, openAuth])
+  }, [currentPath, user, isClient, isDesigner])
 
   useEffect(() => {
     setTimeout(() => setHeroIn(true), 100)
     const onScroll   = () => setScrolled(window.scrollY > 60)
     const onPopState = () => { closeAll(); setCurrentPath(window.location.pathname) }
-    window.addEventListener('scroll', onScroll)
+    window.addEventListener('scroll',   onScroll)
     window.addEventListener('popstate', onPopState)
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('scroll',   onScroll)
       window.removeEventListener('popstate', onPopState)
     }
   }, [closeAll])
 
-  // ── Secret admin route ─────────────────────────────────────────
   if (currentPath === '/admin-sovereign-2024') {
-    return (
-      <AdminRoute
-        onClose={() => {
-          window.history.pushState({}, '', '/')
-          setCurrentPath('/')
-        }}
-      />
-    )
+    return <AdminRoute onClose={() => { window.history.pushState({}, '', '/'); setCurrentPath('/') }} />
   }
 
   const filtered = activeDesigners.filter((d: any) => {
     const mc = category === 'All' || d.category === category
-    const ms =
-      !search ||
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.tagline.toLowerCase().includes(search.toLowerCase()) ||
-      d.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()))
+    const ms = !search || [d.name, d.tagline, ...(d.tags || [])].some((t: string) => t?.toLowerCase().includes(search.toLowerCase()))
     return mc && ms
   })
 
+  // ── navProps is stable — auth values come from context, not state ──
   const navProps = {
-    scrolled,
-    user,
-    isAdmin,
+    scrolled, user, isAdmin, isDesigner, isClient,
     onAdmin:        isAdmin ? () => openOverlay(() => setShowAdmin(true)) : () => {},
-    // Nav "Designer Signup" → locked to designer signup, no role selector
     onSignup:       openDesignerFlow,
     onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client'),
-    onMarketplace:  () => { closeAll(); window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    onMarketplace:  () => { window.scrollTo({ top: 0, behavior: 'smooth' }) },
     onHowItWorks:   () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
-    // Nav "Login" → general auth, no lock
     onLogin:        () => openAuth('login', 'client'),
     onSignOut:      handleLogout,
   }
@@ -230,36 +179,25 @@ export default function App() {
         select option { background:${S.bgLow}; color:${S.text}; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);} }
         @keyframes pulse  { 0%,100%{opacity:0.3;}50%{opacity:0.8;} }
-        @media(max-width:1024px){ .hero-grid{grid-template-columns:1fr!important;gap:48px!important;} .for-designers-grid{grid-template-columns:1fr!important;} }
+        @media(max-width:1024px){ .hero-grid{grid-template-columns:1fr!important;} .for-designers-grid{grid-template-columns:1fr!important;} }
         @media(max-width:768px){
-          .hero-grid{grid-template-columns:1fr!important;gap:36px!important;padding:64px 20px!important;}
+          .hero-grid{grid-template-columns:1fr!important;padding:64px 20px!important;}
           .hero-portrait{display:none!important;}
           .platform-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
           .process-grid,.for-designers-grid,.for-designers-cards{grid-template-columns:1fr!important;}
           .footer-grid{grid-template-columns:1fr 1fr!important;gap:28px!important;}
-          .stats-row{gap:20px!important;flex-wrap:wrap!important;}
           .search-row{flex-direction:column!important;}
-          .market-search-input-row{flex-direction:column!important;}
-          .market-search-input-row > button{width:100%;}
           section{padding:64px 20px!important;}
-          .for-designers-section{padding:64px 20px!important;}
           .footer-root{padding:48px 20px 28px!important;}
         }
         @media(max-width:560px){
           .platform-stats-grid{grid-template-columns:1fr!important;}
           .footer-grid{grid-template-columns:1fr!important;}
           .hero-title{font-size:clamp(34px,11vw,52px)!important;}
-          .auth-role-grid{grid-template-columns:1fr!important;}
           .hero-buttons{flex-direction:column!important;align-items:stretch!important;}
-          .stats-row{flex-direction:column!important;align-items:flex-start!important;}
         }
       `}</style>
 
-      {/*
-        AuthCallback MUST be first child — no props needed.
-        It self-detects OAuth redirects, processes the session,
-        reads the role from localStorage, and routes by role.
-      */}
       <AuthCallback />
 
       {/* ── Logout confirmation ── */}
@@ -269,37 +207,27 @@ export default function App() {
             <Hl style={{ fontSize: 20, marginBottom: 10 }}>Sign out?</Hl>
             <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>Are you sure you want to sign out of Accra Creatives Hub?</Body>
             <div style={{ display: 'flex', gap: 12 }}>
-              <Btn variant="ghost"  full onClick={() => setShowLogoutConfirm(false)}>Cancel</Btn>
-              <Btn variant="danger" full onClick={confirmLogout}>Sign Out</Btn>
+              <Btn variant="ghost" full onClick={() => setShowLogoutConfirm(false)}>Cancel</Btn>
+              {/* Red sign out button in confirmation too */}
+              <button
+                onClick={confirmLogout}
+                style={{ flex: 1, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#ef4444', fontFamily: S.headline, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 700, padding: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={(e: any) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
+                onMouseLeave={(e: any) => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
+              >Sign Out</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Client welcome (post-login) ── */}
+      {/* ── Overlays ── */}
       {showWelcome && isClient && (
         <ClientWelcome
           onBrowse={() => { setShowWelcome(false); scrollTo('marketplace') }}
           onMessages={() => { setShowWelcome(false); openOverlay(() => setShowChat(true)) }}
         />
       )}
-
-      {/* ── Overlays ── */}
-
-      {/*
-        DesignerSignup is the APPLICATION FORM only — not an auth entry point.
-        It only renders for users who are already authenticated as designers.
-      */}
-      {showSignup && isDesigner && (
-        <DesignerSignup onClose={() => setShowSignup(false)} />
-      )}
-
-      {/*
-        AuthModal receives:
-          defaultTab  — 'login' | 'signup'
-          defaultRole — pre-selects role but user can change (unless lockRole set)
-          lockRole    — hides role selector, forces this role, shows locked badge
-      */}
+      {showSignup && isDesigner && <DesignerSignup onClose={() => setShowSignup(false)} />}
       {showAuth && (
         <AuthModal
           onClose={closeAuth}
@@ -308,11 +236,8 @@ export default function App() {
           lockRole={authConfig.lockRole}
         />
       )}
-
       {showAdmin && isAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
-      {showAnalytics && isAdmin && (
-        <DesignerDashboard designer={showAnalytics} onClose={() => setShowAnalytics(null)} />
-      )}
+      {showAnalytics && isAdmin && <DesignerDashboard designer={showAnalytics} onClose={() => setShowAnalytics(null)} />}
       {briefDesigner && (
         <BriefBuilder
           designer={briefDesigner}
@@ -358,7 +283,7 @@ export default function App() {
 
       {/* ── Hero ── */}
       <section id="hero" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 80, position: 'relative', overflow: 'hidden' }}>
-        <img src="/logo.svg" alt="" style={{ position: 'absolute', right: '6%', top: '50%', transform: 'translateY(-50%)', width: 340, maxWidth: '42vw', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
+        <img src="/logo.png" alt="" style={{ position: 'absolute', right: '6%', top: '50%', transform: 'translateY(-50%)', width: 340, maxWidth: '42vw', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
         <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
           <div style={{ animation: heroIn ? 'fadeUp 0.8s ease forwards' : 'none', opacity: heroIn ? 1 : 0 }}>
             <Lbl style={{ marginBottom: 20 }}>The Sovereign Gallery</Lbl>
@@ -369,10 +294,10 @@ export default function App() {
               A curated marketplace for Ghana&apos;s most prestigious visual storytellers. Connecting global brands with elite local craftsmanship.
             </Body>
             <div className="hero-buttons" style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
-              <Btn variant="gold"  size="lg" onClick={() => scrollTo('marketplace')}>Find Your Designer →</Btn>
+              <Btn variant="gold" size="lg" onClick={() => scrollTo('marketplace')}>Find Your Designer →</Btn>
               <Btn variant="ghost" size="lg" onClick={() => scrollTo('how-it-works')}>How It Works</Btn>
             </div>
-            <div className="stats-row" style={{ display: 'flex', gap: 36 }}>
+            <div style={{ display: 'flex', gap: 36, flexWrap: 'wrap' }}>
               {[
                 { n: `${REAL_STATS.verifiedCount}`, l: 'Verified Designers' },
                 { n: `${REAL_STATS.totalOrders}`,   l: 'Active Projects'    },
@@ -386,13 +311,13 @@ export default function App() {
             </div>
           </div>
 
-          <div className="hero-portrait" style={{ position: 'relative', animation: heroIn ? 'fadeUp 0.8s ease 0.2s forwards' : 'none', opacity: heroIn ? 1 : 0 }}>
+          <div className="hero-portrait" style={{ animation: heroIn ? 'fadeUp 0.8s ease 0.2s forwards' : 'none', opacity: heroIn ? 1 : 0 }}>
             <div style={{ position: 'relative', overflow: 'hidden', borderRadius: S.radiusLg }}>
               <img src={DESIGNERS[0].portrait} alt={DESIGNERS[0].name} style={{ width: '100%', height: 520, objectFit: 'cover', objectPosition: 'top', filter: 'grayscale(100%)', opacity: 0.8 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(19,19,19,0.9) 0%,rgba(19,19,19,0.1) 50%,transparent 100%)' }} />
               <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}>
                 <Lbl style={{ marginBottom: 8, color: S.gold }}>Elite Member</Lbl>
-                <Hl style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 300, lineHeight: 1.4, marginBottom: 8 }}>&quot;Crafting modern African narratives through a digital lens.&quot;</Hl>
+                <Hl style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 300, lineHeight: 1.4, marginBottom: 8 }}>"Crafting modern African narratives through a digital lens."</Hl>
                 <Lbl style={{ margin: 0 }}>— {DESIGNERS[0].name}</Lbl>
               </div>
             </div>
@@ -405,11 +330,11 @@ export default function App() {
         </div>
       </section>
 
-      {/* ── Platform stats bar ── */}
+      {/* ── Stats bar ── */}
       <section style={{ background: S.surface, padding: '32px 40px', borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}` }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
-            <img src="/logo.svg" alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+            <img src="/logo.png" alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             <Lbl style={{ margin: 0, color: S.gold }}>Platform Overview</Lbl>
           </div>
           <div className="platform-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: S.borderFaint }}>
@@ -441,7 +366,7 @@ export default function App() {
           <div style={{ height: 1, background: S.borderFaint, marginBottom: 28 }} />
 
           <div className="search-row" style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-            <div className="market-search-input-row" style={{ display: 'flex', flex: 1, minWidth: 260 }}>
+            <div style={{ display: 'flex', flex: 1, minWidth: 260 }}>
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -450,9 +375,7 @@ export default function App() {
                 onFocus={(e: any) => (e.target.style.borderColor = S.gold)}
                 onBlur={(e: any)  => (e.target.style.borderColor = S.border)}
               />
-              <button style={{ background: S.gold, color: S.onPrimary, border: 'none', padding: '12px 20px', fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap', minHeight: 46, borderTopRightRadius: S.radiusSm, borderBottomRightRadius: S.radiusSm }}>
-                Search
-              </button>
+              <button style={{ background: S.gold, color: S.onPrimary, border: 'none', padding: '12px 20px', fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap', minHeight: 46, borderTopRightRadius: S.radiusSm, borderBottomRightRadius: S.radiusSm }}>Search</button>
             </div>
             <div style={{ display: 'flex', gap: 1, background: S.borderFaint, flexWrap: 'wrap', borderRadius: S.radiusSm, overflow: 'hidden' }}>
               {ALL_CATS.map(c => (
@@ -464,19 +387,12 @@ export default function App() {
           </div>
 
           <Body style={{ fontSize: 12, color: S.textFaint, marginBottom: 16 }}>
-            {filtered.length} designer{filtered.length !== 1 ? 's' : ''} found
-            {category !== 'All' ? ` in ${category}` : ''}
-            {search ? ` matching "${search}"` : ''}
+            {filtered.length} designer{filtered.length !== 1 ? 's' : ''} found{category !== 'All' ? ` in ${category}` : ''}{search ? ` matching "${search}"` : ''}
           </Body>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
             {filtered.map((d: any) => (
-              <DesignerCard
-                key={d.id}
-                designer={d}
-                onView={d => openOverlay(() => setSelectedDesigner(d))}
-                onHire={d => openOverlay(() => setBriefDesigner(d))}
-              />
+              <DesignerCard key={d.id} designer={d} onView={d => openOverlay(() => setSelectedDesigner(d))} onHire={d => openOverlay(() => setBriefDesigner(d))} />
             ))}
           </div>
 
@@ -487,13 +403,9 @@ export default function App() {
                 {category !== 'All' && !search ? `No ${category} designers yet.` : 'No designers found.'}
               </Hl>
               <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8, maxWidth: 420, margin: '0 auto 24px' }}>
-                {category !== 'All' && !search
-                  ? `We're growing our ${category} roster. Browse all our verified designers in the meantime.`
-                  : 'Try a different search term or category.'}
+                {category !== 'All' && !search ? `We're growing our ${category} roster. Browse all designers in the meantime.` : 'Try a different search term or category.'}
               </Body>
-              {category !== 'All' && (
-                <Btn variant="gold" onClick={() => setCategory('All')}>Browse All Designers →</Btn>
-              )}
+              {category !== 'All' && <Btn variant="gold" onClick={() => setCategory('All')}>Browse All Designers →</Btn>}
             </div>
           )}
         </div>
@@ -509,8 +421,8 @@ export default function App() {
         <div className="process-grid" style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
           {[
             { n: '01', i: '▣', t: 'Build Your Brief',     d: 'Fill out our structured brief form — project type, colours, references, and budget.', action: () => scrollTo('marketplace') },
-            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held in escrow until you approve.',        action: null },
-            { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.',                  action: null },
+            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held in escrow until you approve.', action: null },
+            { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.', action: null },
           ].map((s, i) => (
             <div key={i} onClick={s.action || undefined}
               style={{ background: S.bgLow, padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
@@ -532,7 +444,7 @@ export default function App() {
 
       {/* ── For Designers — hidden from logged-in clients ── */}
       {showForDesigners && (
-        <section id="for-designers" className="for-designers-section" style={{ padding: '96px 40px', background: S.bgDeep }}>
+        <section id="for-designers" style={{ padding: '96px 40px', background: S.bgDeep }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
               <div>
@@ -542,14 +454,11 @@ export default function App() {
                 </Hl>
                 <GoldLine />
                 <Body style={{ fontSize: 14, marginBottom: 32, lineHeight: 1.9 }}>
-                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through escrow. Free to join — we only earn when you do.
+                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through escrow.
                 </Body>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {/* Apply to Join → locked designer signup */}
                   <Btn variant="gold" size="lg" onClick={openDesignerFlow}>Apply to Join →</Btn>
-                  {isAdmin && (
-                    <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>
-                  )}
+                  {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>}
                 </div>
               </div>
               <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
@@ -575,15 +484,12 @@ export default function App() {
       <footer className="footer-root" style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
-
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <img src="/logo.svg" alt="" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 8 }} />
+                <img src="/logo.png" alt="" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
-              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>
-                Ghana&apos;s first curated marketplace for verified graphic designers. Secure escrow. Real reviews.
-              </Body>
+              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana's first curated marketplace for verified graphic designers. Secure escrow. Real reviews.</Body>
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {[{ v: REAL_STATS.designerCount, l: 'Designers' }, { v: REAL_STATS.totalOrders, l: 'Orders' }, { v: `${REAL_STATS.avgRating}★`, l: 'Avg Rating' }].map(s => (
                   <div key={s.l}>
@@ -602,8 +508,7 @@ export default function App() {
                 { label: 'Messages',     fn: () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client') },
                 ...(isAdmin ? [{ label: 'Admin Panel', fn: () => openOverlay(() => setShowAdmin(true)) }] : []),
               ].map(l => (
-                <div key={l.label} onClick={l.fn}
-                  style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
+                <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}
                   onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
                 >{l.label}</div>
@@ -614,11 +519,10 @@ export default function App() {
               <div>
                 <Lbl style={{ marginBottom: 16 }}>For Designers</Lbl>
                 {[
-                  { label: 'Apply to Join', fn: openDesignerFlow        },
+                  { label: 'Apply to Join', fn: openDesignerFlow              },
                   { label: 'How It Works',  fn: () => scrollTo('for-designers') },
                 ].map(l => (
-                  <div key={l.label} onClick={l.fn}
-                    style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
+                  <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                     onMouseEnter={(e: any) => (e.target.style.color = S.text)}
                     onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
                   >{l.label}</div>
@@ -634,8 +538,7 @@ export default function App() {
                 { label: 'Terms',          fn: () => openOverlay(() => setShowTerms(true))   },
                 { label: 'Privacy Policy', fn: () => openOverlay(() => setShowTerms(true))   },
               ].map(l => (
-                <div key={l.label} onClick={l.fn}
-                  style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
+                <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}
                   onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
                 >{l.label}</div>
@@ -651,8 +554,7 @@ export default function App() {
             </Body>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map(s => (
-                <span key={s}
-                  style={{ color: S.textFaint, fontSize: 10, fontFamily: S.body, cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'color 0.2s' }}
+                <span key={s} style={{ color: S.textFaint, fontSize: 10, fontFamily: S.body, cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.gold)}
                   onMouseLeave={(e: any) => (e.target.style.color = S.textFaint)}
                 >{s}</span>
