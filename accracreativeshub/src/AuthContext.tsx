@@ -1,9 +1,4 @@
 // ── src/AuthContext.tsx ──
-// Auth state is stored in module-level cache so it never resets
-// when overlays open/close or history changes.
-// The root cause of the navbar flickering was that `closeAll()` in App.tsx
-// was triggering re-renders that made the nav briefly see `user = null`.
-// Fix: auth state lives here and is never touched by overlay logic.
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 // @ts-ignore
@@ -36,7 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchRole = async (userId: string, fallback = 'client'): Promise<string> => {
     try {
       const { data } = await supabase
-        .from('profiles').select('role').eq('id', userId).single()
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single()
       return data?.role || fallback
     } catch {
       return fallback
@@ -61,13 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [processUser])
 
   useEffect(() => {
-    // Initial session load
     supabase.auth.getSession().then(async ({ data: { session } }: any) => {
       await processUser(session?.user ?? null)
       setLoading(false)
     })
 
-    // Listen for auth changes — only update on real auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
         if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
@@ -75,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           setUser(null); setUserRole(null); setVerified(false)
         }
-        // INITIAL_SESSION fires on load — don't double-process
         setLoading(false)
       }
     )
