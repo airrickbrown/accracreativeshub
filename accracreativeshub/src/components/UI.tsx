@@ -1,12 +1,8 @@
 // ── SHARED UI COMPONENTS ──
-// These are small reusable pieces used across the whole app.
-// Think of them like LEGO bricks — Nav, BriefBuilder, Chat etc
-// are all built using these smaller pieces.
 
 import React, { useState } from 'react'
 import { S, BADGES } from '../styles/tokens'
 
-// ── Typography helpers ──
 export const Hl = ({ children, style = {} }: any) => (
   <div style={{ fontFamily: S.headline, color: S.text, ...style }}>{children}</div>
 )
@@ -41,7 +37,6 @@ export const Body = ({ children, style = {} }: any) => (
   </p>
 )
 
-// ── Gold horizontal rule ──
 export const GoldLine = ({ w = '48px' }: any) => (
   <div
     style={{
@@ -53,12 +48,10 @@ export const GoldLine = ({ w = '48px' }: any) => (
   />
 )
 
-// ── Thin divider line ──
 export const Divider = () => (
   <div style={{ height: 1, background: S.borderFaint, margin: '16px 0' }} />
 )
 
-// ── Designer badge pill (Under Review / Verified / Elite etc) ──
 export const Badge = ({ type, size = 10 }: any) => {
   const b = BADGES[type] || BADGES.new
   return (
@@ -81,7 +74,6 @@ export const Badge = ({ type, size = 10 }: any) => {
   )
 }
 
-// ── Star rating display ──
 export const Stars = ({ rating }: any) => (
   <span style={{ color: S.gold, fontSize: 12, letterSpacing: 2 }}>
     {'★'.repeat(Math.floor(rating))}
@@ -89,8 +81,6 @@ export const Stars = ({ rating }: any) => (
   </span>
 )
 
-// ── Button component ──
-// variant options: gold | outline | ghost | danger | success | dark
 export const Btn = ({
   children,
   onClick,
@@ -102,17 +92,21 @@ export const Btn = ({
 }: any) => {
   const [h, setH] = useState(false)
 
-  const pad: any = {
+  // ── FIX: typed as Record<string, string> so indexing with `size` is valid ──
+  const padMap: Record<string, string> = {
     sm: '9px 16px',
     md: '12px 24px',
     lg: '15px 34px',
-  }[size]
+  }
+  const pad = padMap[size as string] ?? '12px 24px'
 
-  const fontSize: any = {
+  // ── FIX: typed as Record<string, number> so indexing with `size` is valid ──
+  const fontSizeMap: Record<string, number> = {
     sm: 10,
     md: 11,
     lg: 12,
-  }[size]
+  }
+  const fontSize = fontSizeMap[size as string] ?? 11
 
   const variants: any = {
     gold: {
@@ -186,10 +180,8 @@ export const Btn = ({
   )
 }
 
-// ── Text input ──
 export const Inp = ({ label, placeholder, value, onChange, type = 'text' }: any) => {
   const [focus, setFocus] = useState(false)
-
   return (
     <div>
       {label && <Lbl style={{ marginBottom: 8 }}>{label}</Lbl>}
@@ -220,10 +212,8 @@ export const Inp = ({ label, placeholder, value, onChange, type = 'text' }: any)
   )
 }
 
-// ── Dropdown select ──
 export const Sel = ({ label, options, value, onChange }: any) => {
   const [focus, setFocus] = useState(false)
-
   return (
     <div>
       {label && <Lbl style={{ marginBottom: 8 }}>{label}</Lbl>}
@@ -259,10 +249,8 @@ export const Sel = ({ label, options, value, onChange }: any) => {
   )
 }
 
-// ── Textarea ──
 export const Txt = ({ label, placeholder, value, onChange, rows = 4 }: any) => {
   const [focus, setFocus] = useState(false)
-
   return (
     <div>
       {label && <Lbl style={{ marginBottom: 8 }}>{label}</Lbl>}
@@ -293,7 +281,6 @@ export const Txt = ({ label, placeholder, value, onChange, rows = 4 }: any) => {
   )
 }
 
-// ── Stat card (used in dashboards) ──
 export const StatCard = ({ label, value, color = S.text, sub = '' }: any) => (
   <div
     style={{

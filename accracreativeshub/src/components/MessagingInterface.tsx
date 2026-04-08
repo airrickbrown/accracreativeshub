@@ -1,15 +1,4 @@
 // ── src/components/MessagingInterface.tsx ──
-//
-// KEYBOARD BUG FIX:
-// Root cause: MessageInput was defined as a function INSIDE MessagingInterface.
-// Every time any state changed (even typing a character), React saw a new
-// component type, unmounted the old input, mounted a new one = keyboard closes.
-//
-// Fix: MessageInput is defined OUTSIDE the main component with React.memo()
-// and all callbacks are stable via useCallback().
-//
-// REAL-TIME: Yes — uses Supabase Realtime (postgres_changes subscription).
-// Messages appear instantly for both client and designer without refresh.
 
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { S, pct, fmt } from '../styles/tokens'
@@ -21,10 +10,6 @@ import { useAuth } from '../AuthContext'
 
 interface Props { onClose: () => void; initialOrder?: any }
 
-// ─────────────────────────────────────────────────────────────
-// MessageInput — MUST be defined outside MessagingInterface
-// so React never treats it as a new component type on re-renders
-// ─────────────────────────────────────────────────────────────
 interface InputProps {
   value:        string
   uploading:    boolean
@@ -42,7 +27,6 @@ const MessageInput = memo(({
 }: InputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Stable keydown handler
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend() }
   }, [onSend])
@@ -60,7 +44,6 @@ const MessageInput = memo(({
         style={{ display: 'none' }}
         onChange={onFileChange}
       />
-
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button
           onClick={onFileClick}
@@ -70,12 +53,6 @@ const MessageInput = memo(({
         >
           {uploading ? '⏳' : '📎'}
         </button>
-
-        {/* 
-          KEY: value + onChange only.
-          No onBlur that could trigger state changes → no re-render → no keyboard close.
-          16px font-size prevents iOS auto-zoom.
-        */}
         <input
           ref={inputRef}
           value={value}
@@ -85,27 +62,13 @@ const MessageInput = memo(({
           disabled={uploading}
           autoComplete="off"
           autoCorrect="off"
-          style={{
-            flex: 1,
-            background: S.surface,
-            border: `1px solid ${S.border}`,
-            color: S.text,
-            padding: '11px 14px',
-            fontFamily: S.body,
-            fontSize: 16,
-            outline: 'none',
-            borderRadius: 6,
-            minHeight: 40,
-          }}
+          style={{ flex: 1, background: S.surface, border: `1px solid ${S.border}`, color: S.text, padding: '11px 14px', fontFamily: S.body, fontSize: 16, outline: 'none', borderRadius: 6, minHeight: 40 }}
         />
         <Btn variant="gold" onClick={onSend} disabled={uploading || !value.trim()}>Send</Btn>
       </div>
-
       <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
         {quickReplies.map(r => (
-          <button
-            key={r}
-            onClick={() => onChange(r)}
+          <button key={r} onClick={() => onChange(r)}
             style={{ background: 'none', border: `1px solid ${S.borderFaint}`, color: S.textFaint, padding: '4px 10px', fontSize: 10, fontFamily: S.body, cursor: 'pointer', borderRadius: 4, whiteSpace: 'nowrap' }}
           >{r}</button>
         ))}
@@ -114,9 +77,6 @@ const MessageInput = memo(({
   )
 })
 
-// ─────────────────────────────────────────────────────────────
-// ConversationList — also outside to prevent remount
-// ─────────────────────────────────────────────────────────────
 interface ListProps {
   orders: any[]; activeOrder: any; loading: boolean
   isMobile: boolean; onSelect: (o: any) => void
@@ -159,33 +119,28 @@ const ConversationList = memo(({ orders, activeOrder, loading, isMobile, onSelec
   </div>
 ))
 
-// ─────────────────────────────────────────────────────────────
-// Main component
-// ─────────────────────────────────────────────────────────────
-
 export default function MessagingInterface({ onClose, initialOrder }: Props) {
   const { user, isDesigner } = useAuth()
-  // view is derived from role — NOT a toggle — so it never changes on re-render
   const view = isDesigner ? 'designer' : 'client'
 
-  const [orders, setOrders]         = useState<any[]>(ORDERS)
-  const [ordersLoading, setOL]      = useState(true)
-  const [activeOrder, setActiveOrder] = useState<any>(ORDERS[0])
-  const [msgs, setMsgs]             = useState<any[]>(MESSAGES_DATA[ORDERS[0]?.id] || [])
-  const [input, setInput]           = useState('')
-  const [ord, setOrd]               = useState<any>({ ...ORDERS[0] })
-  const [uploading, setUploading]   = useState(false)
-  const [showReview, setShowReview] = useState(false)
-  const [showDispute, setShowDispute] = useState(false)
+  const [orders, setOrders]               = useState<any[]>(ORDERS)
+  const [ordersLoading, setOL]            = useState(true)
+  const [activeOrder, setActiveOrder]     = useState<any>(ORDERS[0])
+  const [msgs, setMsgs]                   = useState<any[]>(MESSAGES_DATA[ORDERS[0]?.id] || [])
+  const [input, setInput]                 = useState('')
+  const [ord, setOrd]                     = useState<any>({ ...ORDERS[0] })
+  const [uploading, setUploading]         = useState(false)
+  const [showReview, setShowReview]       = useState(false)
+  const [showDispute, setShowDispute]     = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [reviewRating, setReviewRating]   = useState(0)
   const [reviewComment, setReviewComment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [isMobile, setIsMobile]     = useState(false)
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list')
+  const [submitting, setSubmitting]       = useState(false)
+  const [isMobile, setIsMobile]           = useState(false)
+  const [mobileView, setMobileView]       = useState<'list' | 'chat'>('list')
 
-  const bottomRef  = useRef<HTMLDivElement>(null)
-  const fileRef    = useRef<HTMLInputElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const fileRef   = useRef<HTMLInputElement>(null)
 
   const revLeft = (ord?.revisions?.total ?? 3) - (ord?.revisions?.used ?? 0)
 
@@ -200,7 +155,7 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   const normalizeOrder = useCallback((o: any) => {
     const fb = fbDesigner(o.designer_id)
     return {
-      id: o.id,
+      id:          o.id,
       client:      o.profiles?.full_name || o.client || 'Client',
       designer:    o.designers_profiles?.full_name || fb.name,
       designer_id: o.designer_id ?? o.designerObj?.id,
@@ -217,11 +172,11 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }, [])
 
   const mapMsg = useCallback((m: any) => ({
-    id:   m.id,
-    from: m.sender_id === user?.id ? view : (view === 'client' ? 'designer' : 'client'),
-    text: m.content,
-    time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-    type: m.message_type || 'text',
+    id:       m.id,
+    from:     m.sender_id === user?.id ? view : (view === 'client' ? 'designer' : 'client'),
+    text:     m.content,
+    time:     m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+    type:     m.message_type || 'text',
     fileUrl:  m.file_url  || null,
     fileName: m.file_name || null,
   }), [user?.id, view])
@@ -256,11 +211,10 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
     if (error) { console.error('Send error:', error); alert('Failed to send') }
   }, [user?.id])
 
-  // Stable send — won't cause input to lose focus
   const send = useCallback(async () => {
     const text = input.trim()
     if (!text) return
-    setInput('')   // clear first, then send — no async delay causes focus loss
+    setInput('')
     await sendMessage(text, activeOrder?.id)
   }, [input, activeOrder?.id, sendMessage])
 
@@ -306,11 +260,15 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
     if (!activeOrder?.id) return
     loadMessages(activeOrder.id)
 
-    // Real-time subscription — messages appear instantly
+    // ── FIX: typed payload parameter to remove implicit 'any' error ──
     const channel = supabase.channel(`msgs-${activeOrder.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `order_id=eq.${activeOrder.id}` },
-        payload => setMsgs(prev => [...prev, mapMsg(payload.new as any)])
-      ).subscribe()
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `order_id=eq.${activeOrder.id}` },
+        (payload: { new: Record<string, unknown> }) =>
+          setMsgs(prev => [...prev, mapMsg(payload.new)])
+      )
+      .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [activeOrder?.id, user?.id])
@@ -323,7 +281,6 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
         <Lbl style={{ marginBottom: 6 }}>Brief</Lbl>
         <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{ord.brief || 'No brief provided.'}</Body>
       </div>
-
       {msgs.map((m: any, i: number) => {
         const isMe = m.from === view
         if (m.from === 'system') return (
@@ -351,8 +308,6 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
         <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Amount</Lbl><Hl style={{ color: S.gold, fontSize: 15 }}>{fmt(ord.amount)}</Hl></div>
         <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Status</Lbl><Hl style={{ color: ['delivered','completed'].includes(ord.status) ? S.success : S.gold, fontSize: 11, textTransform: 'capitalize' }}>{String(ord.status).replace('_', ' ')}</Hl></div>
         <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Deadline</Lbl><Hl style={{ fontSize: 11 }}>{ord.deadline}</Hl></div>
-
-        {/* Action buttons — role-gated */}
         {view === 'client' && ord.status === 'in_progress' && (
           <Btn variant="outline" size="sm" disabled={revLeft === 0} onClick={() => {
             setOrd((o: any) => ({ ...o, revisions: { ...o.revisions, used: o.revisions.used + 1 } }))
@@ -385,7 +340,9 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
           <div style={{ background: S.surface, border: `1px solid ${S.border}`, width: '100%', maxWidth: 480, padding: 32 }}>
             <Hl style={{ fontSize: 22, marginBottom: 16 }}>Leave a Review</Hl>
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {[1,2,3,4,5].map(s => <button key={s} onClick={() => setReviewRating(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, color: s <= reviewRating ? S.gold : S.textFaint }}>★</button>)}
+              {[1,2,3,4,5].map(s => (
+                <button key={s} onClick={() => setReviewRating(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 28, color: s <= reviewRating ? S.gold : S.textFaint }}>★</button>
+              ))}
             </div>
             <Txt placeholder="Write a short review…" value={reviewComment} onChange={setReviewComment} rows={3} />
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
@@ -410,7 +367,10 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
             <Txt placeholder="Describe the issue clearly…" value={disputeReason} onChange={setDisputeReason} rows={4} />
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <Btn variant="ghost" onClick={() => setShowDispute(false)} full>Cancel</Btn>
-              <Btn variant="danger" onClick={() => { setMsgs(m => [...m, { from: 'system', text: `Dispute raised: "${disputeReason}". Funds frozen.` }]); setShowDispute(false) }} full>Submit</Btn>
+              <Btn variant="danger" onClick={() => {
+                setMsgs(m => [...m, { from: 'system', text: `Dispute raised: "${disputeReason}". Funds frozen.` }])
+                setShowDispute(false)
+              }} full>Submit</Btn>
             </div>
           </div>
         </div>
@@ -449,12 +409,9 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
         </div>
       ) : (
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-          {/* Sidebar */}
           <div style={{ width: 280, borderRight: `1px solid ${S.borderFaint}`, flexShrink: 0 }}>
             <ConversationList orders={orders} activeOrder={activeOrder} loading={ordersLoading} isMobile={isMobile} onSelect={selectOrder} />
           </div>
-
-          {/* Chat */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <div style={{ background: S.bg, padding: '14px 24px', borderBottom: `1px solid ${S.borderFaint}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${S.gold}40` }}>
@@ -464,20 +421,16 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
                 <Hl style={{ fontSize: 15, fontWeight: 600 }}>{activeOrder?.designer}</Hl>
                 <Lbl style={{ marginBottom: 0, fontSize: 8 }}>{activeOrder?.designerObj?.category}</Lbl>
               </div>
-              {/* Role indicator */}
               <div style={{ marginLeft: 'auto', padding: '4px 10px', background: view === 'designer' ? 'rgba(201,168,76,0.08)' : 'rgba(74,154,74,0.08)', border: `1px solid ${view === 'designer' ? 'rgba(201,168,76,0.2)' : 'rgba(74,154,74,0.2)'}`, borderRadius: 6 }}>
                 <Lbl style={{ margin: 0, fontSize: 8, color: view === 'designer' ? S.gold : S.success }}>
                   {view === 'designer' ? '◈ Designer' : '◉ Client'}
                 </Lbl>
               </div>
             </div>
-
             {renderActionBar()}
-
             <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {renderMessages()}
             </div>
-
             <MessageInput value={input} uploading={uploading} view={view} onChange={setInput} onSend={send} onFileClick={() => fileRef.current?.click()} fileRef={fileRef} onFileChange={handleFileChange} isMobile={isMobile} />
           </div>
         </div>
