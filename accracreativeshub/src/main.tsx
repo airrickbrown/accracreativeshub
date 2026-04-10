@@ -4,7 +4,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './AuthContext'
-import PasswordResetPage from './PasswordResetPage'
+import PasswordResetPage from './components/PasswordResetPage'
 
 function start() {
   const hash = window.location.hash
