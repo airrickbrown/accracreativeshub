@@ -1,4 +1,7 @@
 // ── src/AuthContext.tsx ──
+// Key fix: 8 second timeout on initial session load.
+// If Supabase doesn't respond (missing env vars, network issue),
+// the app stops loading and renders anyway instead of black screen forever.
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 // @ts-ignore
@@ -23,10 +26,10 @@ const Ctx = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]             = useState<any>(null)
-  const [userRole, setUserRole]     = useState<'admin' | 'designer' | 'client' | null>(null)
+  const [user, setUser]              = useState<any>(null)
+  const [userRole, setUserRole]      = useState<'admin' | 'designer' | 'client' | null>(null)
   const [emailVerified, setVerified] = useState(false)
-  const [loading, setLoading]       = useState(true)
+  const [loading, setLoading]        = useState(true)
 
   const fetchRole = async (userId: string, fallback = 'client'): Promise<string> => {
     try {
@@ -59,9 +62,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [processUser])
 
   useEffect(() => {
+    let done = false
+
+    // Safety timeout — if Supabase doesn't respond in 8s, unblock the app
+    const timeout = setTimeout(() => {
+      if (!done) { done = true; setLoading(false) }
+    }, 8000)
+
     supabase.auth.getSession().then(async ({ data: { session } }: any) => {
+      if (done) return
+      done = true
+      clearTimeout(timeout)
       await processUser(session?.user ?? null)
       setLoading(false)
+    }).catch(() => {
+      if (!done) { done = true; clearTimeout(timeout); setLoading(false) }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -75,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => { subscription.unsubscribe(); clearTimeout(timeout) }
   }, [processUser])
 
   const signOut = async () => {
@@ -85,8 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      user, userRole, emailVerified: emailVerified, loading,
-      signOut, refreshUser,
+      user, userRole, emailVerified, loading, signOut, refreshUser,
       isAdmin:    userRole === 'admin',
       isDesigner: userRole === 'designer',
       isClient:   !!user && !['admin', 'designer'].includes(userRole || ''),

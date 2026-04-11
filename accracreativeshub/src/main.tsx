@@ -5,26 +5,34 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './AuthContext'
 import PasswordResetPage from './components/PasswordResetPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function start() {
   const hash = window.location.hash
 
+  const root = ReactDOM.createRoot(document.getElementById('root')!)
+
+  // Password reset link from Supabase email
   if (hash.includes('type=recovery')) {
-    ReactDOM.createRoot(document.getElementById('root')!).render(
+    root.render(
       <React.StrictMode>
-        <AuthProvider>
-          <PasswordResetPage />
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <PasswordResetPage />
+          </AuthProvider>
+        </ErrorBoundary>
       </React.StrictMode>
     )
     return
   }
 
-  ReactDOM.createRoot(document.getElementById('root')!).render(
+  root.render(
     <React.StrictMode>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   )
 }
