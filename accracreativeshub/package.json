@@ -10,16 +10,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.13.2",
-    "resend": "^6.9.4"
-  },
-  "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.13.2",
+    "resend": "^6.9.4",
     "typescript": "^5.0.0",
     "vite": "^4.5.14"
-  }
+  },
+  "devDependencies": {}
 }
