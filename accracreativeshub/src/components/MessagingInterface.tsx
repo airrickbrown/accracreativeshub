@@ -7,6 +7,8 @@ import { ORDERS, MESSAGES_DATA, DESIGNERS } from '../data/mockData'
 // @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
+import PresenceIndicator from './PresenceIndicator'
+
 
 interface Props { onClose: () => void; initialOrder?: any }
 
@@ -78,7 +80,7 @@ const MessageInput = memo(({
 })
 
 interface ListProps {
-  orders: any[]; activeOrder: any; loading: boolean
+  orders: any[]; Order: any; loading: boolean
   isMobile: boolean; onSelect: (o: any) => void
 }
 
@@ -420,6 +422,7 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
               <div>
                 <Hl style={{ fontSize: 15, fontWeight: 600 }}>{activeOrder?.designer}</Hl>
                 <Lbl style={{ marginBottom: 0, fontSize: 8 }}>{activeOrder?.designerObj?.category}</Lbl>
+                <PresenceIndicator userId={activeOrder?.designer_id} showLabel style={{ marginTop: 4 }} />
               </div>
               <div style={{ marginLeft: 'auto', padding: '4px 10px', background: view === 'designer' ? 'rgba(201,168,76,0.08)' : 'rgba(74,154,74,0.08)', border: `1px solid ${view === 'designer' ? 'rgba(201,168,76,0.2)' : 'rgba(74,154,74,0.2)'}`, borderRadius: 6 }}>
                 <Lbl style={{ margin: 0, fontSize: 8, color: view === 'designer' ? S.gold : S.success }}>

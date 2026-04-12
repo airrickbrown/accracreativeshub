@@ -29,6 +29,9 @@ import { useDesigners } from './hooks/useDesigners'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 import { COPY } from './lib/copy'
+import { useOwnPresence } from './components/PresenceIndicator'
+import { HelpButton, NotFoundPage} from './components/LoadingSpinner'
+
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 
@@ -69,6 +72,7 @@ export default function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showWelcome, setShowWelcome]           = useState(false)
   const [currentPath, setCurrentPath]           = useState(window.location.pathname)
+  useOwnPresence()
 
   // ── Auth state from context — NEVER modified by overlay logic ──
   const { user, signOut, isAdmin, isDesigner, isClient } = useAuth()
@@ -564,6 +568,7 @@ export default function App() {
           </div>
         </div>
       </footer>
+      <HelpButton onHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
     </div>
   )
 }

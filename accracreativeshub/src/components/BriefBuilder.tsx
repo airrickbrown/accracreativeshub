@@ -1,516 +1,580 @@
 // ── src/components/BriefBuilder.tsx ──
-// Hire Designer flow with:
-// ✅ Step validation — blocks progression if required fields empty
-// ✅ Proper placeholders on all fields
-// ✅ Save Draft — persists to localStorage with recovery prompt
-// ✅ Draft recovery modal on open
-// ✅ Confirmation before closing/abandoning
+// Fixed:
+// - Mobile text sizing — all fields readable on small screens
+// - Project category has placeholder + only platform-relevant categories
+// - All dropdowns have clear visual indicator (▾)
+// - Short, precise placeholder text — no walls of text
+// - Loading spinner on submit
+// - Designer notified via email (Resend) when brief submitted
+// - Brief data saved to Supabase orders table
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { S } from '../styles/tokens'
-import { Btn, Inp, Sel, Txt, Hl, Body, Lbl, GoldLine } from './UI'
+import { Btn, Hl, Body, Lbl, GoldLine } from './UI'
 // @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 
-interface BriefBuilderProps {
-  designer:        any
-  onClose:         () => void
-  onOrderCreated:  (order: any) => void
+// ── Platform categories only ──
+const CATEGORIES = [
+  'Graphic Design',
+  'UI/UX Design',
+  'Motion Graphics',
+]
+
+const BUDGETS = [
+  'GH₵ 200 – 500',
+  'GH₵ 500 – 1,000',
+  'GH₵ 1,000 – 2,500',
+  'GH₵ 2,500 – 5,000',
+  'GH₵ 5,000+',
+]
+
+const TIMELINES = [
+  '1–3 days (Rush)',
+  '3–7 days',
+  '1–2 weeks',
+  '2–4 weeks',
+  'Flexible',
+]
+
+const REVISION_OPTIONS = ['1 revision', '2 revisions', '3 revisions (recommended)', 'Unlimited']
+
+// @ts-ignore
+const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
+const FROM = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
+
+async function notifyDesigner(designer: any, clientName: string, project: string) {
+  const key = RESEND_KEY()
+  if (!key || !designer?.email) return
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from:    FROM,
+        to:      designer.email,
+        subject: `New brief from ${clientName} — ${project}`,
+        html: `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:48px 20px;"><tr><td align="center">
+<table width="100%" style="max-width:560px;background:#131313;border:1px solid rgba(201,168,76,0.2);">
+<tr><td style="padding:28px 36px 20px;text-align:center;border-bottom:1px solid rgba(201,168,76,0.1);">
+  <h1 style="color:#c9a84c;font-family:Georgia,serif;font-weight:400;margin:0;font-size:18px;letter-spacing:0.05em;">ACCRA CREATIVES HUB</h1>
+</td></tr>
+<tr><td style="padding:32px 36px;">
+  <h2 style="color:#f5f5f5;font-family:Georgia,serif;font-weight:400;font-size:20px;margin:0 0 12px;">
+    You have a new project brief, ${designer.name?.split(' ')[0] || 'there'}.
+  </h2>
+  <p style="color:#999;font-size:14px;line-height:1.9;margin:0 0 20px;">
+    <strong style="color:#f5f5f5;">${clientName}</strong> has submitted a brief for your services.
+  </p>
+  <div style="background:#0d0d0d;border-left:3px solid #c9a84c;padding:14px 18px;margin:0 0 20px;">
+    <p style="color:#aaa;font-size:13px;margin:0 0 6px;"><strong style="color:#f5f5f5;">Project:</strong> ${project}</p>
+  </div>
+  <a href="https://accracreativeshub.com"
+     style="display:inline-block;background:#c9a84c;color:#131313;font-family:Arial;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;padding:13px 28px;border-radius:8px;">
+    View Brief & Respond →
+  </a>
+  <p style="color:#666;font-size:12px;margin:20px 0 0;line-height:1.6;">
+    Log in to your dashboard to review the full brief and respond to the client.<br/>
+    Responding quickly improves your visibility on the platform.
+  </p>
+</td></tr>
+<tr><td style="background:#0d0d0d;padding:18px 36px;text-align:center;border-top:1px solid rgba(201,168,76,0.1);">
+  <p style="color:#444;font-size:11px;margin:0;">© ${new Date().getFullYear()} Accra Creatives Hub · Accra, Ghana</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+      }),
+    })
+  } catch (e) {
+    console.warn('Designer notification failed (non-fatal):', e)
+  }
 }
 
-// ── Required fields per step ──
-const REQUIRED: Record<number, { key: string; label: string }[]> = {
-  1: [
-    { key: 'category',    label: 'Project Category'  },
-    { key: 'title',       label: 'Project Title'      },
-    { key: 'description', label: 'Project Description' },
-  ],
-  2: [
-    { key: 'industry',  label: 'Industry'  },
-    { key: 'audience',  label: 'Target Audience' },
-    { key: 'tone',      label: 'Brand Tone' },
-  ],
-  3: [
-    { key: 'budget',   label: 'Budget'   },
-    { key: 'deadline', label: 'Deadline' },
-  ],
+interface Props {
+  designer:       any
+  onClose:        () => void
+  onOrderCreated: (order: any) => void
 }
 
-const DRAFT_KEY = (designerId: any) => `brief_draft_${designerId}`
-
-const EMPTY_FORM = {
-  category:    '',
-  title:       '',
-  description: '',
-  industry:    '',
-  audience:    '',
-  tone:        '',
-  colours:     '',
-  references:  '',
-  budget:      '',
-  deadline:    '',
-  rush:        false,
-  notes:       '',
+// Shared field label style
+const FL: React.CSSProperties = {
+  fontFamily:     S.headline,
+  color:          S.textFaint,
+  fontSize:       'clamp(9px, 2.5vw, 11px)',
+  letterSpacing:  '0.18em',
+  textTransform:  'uppercase',
+  marginBottom:   8,
+  display:        'block',
 }
 
-export default function BriefBuilder({ designer, onClose, onOrderCreated }: BriefBuilderProps) {
+// Shared input/select/textarea base style
+const fieldBase = (focused: boolean): React.CSSProperties => ({
+  width:         '100%',
+  boxSizing:     'border-box' as const,
+  background:    focused ? 'rgba(201,168,76,0.03)' : 'rgba(255,255,255,0.04)',
+  border:        `1px solid ${focused ? S.gold : 'rgba(255,255,255,0.09)'}`,
+  color:         S.text,
+  fontFamily:    S.body,
+  fontSize:      16,   // 16px minimum prevents iOS zoom
+  padding:       'clamp(12px, 3vw, 14px) clamp(14px, 3vw, 16px)',
+  outline:       'none',
+  borderRadius:  8,
+  minHeight:     'clamp(48px, 10vw, 54px)',
+  transition:    'all 0.18s ease',
+  boxShadow:     focused ? '0 0 0 3px rgba(201,168,76,0.1)' : 'none',
+})
+
+// Select with dropdown arrow indicator
+const SelectField = ({ label, value, onChange, options, placeholder }: {
+  label:       string
+  value:       string
+  onChange:    (v: string) => void
+  options:     string[]
+  placeholder: string
+}) => {
+  const [f, setF] = useState(false)
+  return (
+    <div>
+      <span style={FL}>{label}</span>
+      <div style={{ position: 'relative' }}>
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setF(true)}
+          onBlur={() => setF(false)}
+          style={{
+            ...fieldBase(f),
+            appearance: 'none',
+            cursor: 'pointer',
+            paddingRight: 40,
+            color: value ? S.text : S.textFaint,
+          }}
+        >
+          <option value="" disabled style={{ color: S.textFaint }}>{placeholder}</option>
+          {options.map(o => (
+            <option key={o} value={o} style={{ background: S.bgLow, color: S.text }}>{o}</option>
+          ))}
+        </select>
+        {/* Dropdown arrow — makes it clear this is a dropdown */}
+        <span style={{
+          position: 'absolute', right: 14, top: '50%',
+          transform: `translateY(-50%) rotate(${f ? '180deg' : '0deg'})`,
+          color: f ? S.gold : S.textFaint,
+          fontSize: 12, pointerEvents: 'none',
+          transition: 'transform 0.18s, color 0.18s',
+        }}>▾</span>
+      </div>
+    </div>
+  )
+}
+
+const TextField = ({ label, value, onChange, placeholder, type = 'text' }: {
+  label: string; value: string; onChange: (v: string) => void
+  placeholder: string; type?: string
+}) => {
+  const [f, setF] = useState(false)
+  return (
+    <div>
+      <span style={FL}>{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        onFocus={() => setF(true)}
+        onBlur={() => setF(false)}
+        style={fieldBase(f)}
+      />
+    </div>
+  )
+}
+
+const TextAreaField = ({ label, value, onChange, placeholder, rows = 4 }: {
+  label: string; value: string; onChange: (v: string) => void
+  placeholder: string; rows?: number
+}) => {
+  const [f, setF] = useState(false)
+  return (
+    <div>
+      <span style={FL}>{label}</span>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        onFocus={() => setF(true)}
+        onBlur={() => setF(false)}
+        style={{ ...fieldBase(f), resize: 'vertical', minHeight: 100, lineHeight: 1.7 }}
+      />
+    </div>
+  )
+}
+
+export default function BriefBuilder({ designer, onClose, onOrderCreated }: Props) {
   const { user } = useAuth()
-  const [step, setStep]               = useState(1)
-  const [form, setForm]               = useState({ ...EMPTY_FORM })
-  const [stepError, setStepError]     = useState<string | null>(null)
-  const [submitting, setSubmitting]   = useState(false)
-  const [showDraftModal, setShowDraftModal] = useState(false)
-  const [showAbandonModal, setShowAbandonModal] = useState(false)
-  const [savedDraft, setSavedDraft]   = useState<any>(null)
-  const [isMobile, setIsMobile]       = useState(false)
+
+  const [step, setStep]         = useState<1 | 2 | 3>(1)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError]       = useState('')
+
+  const [form, setForm] = useState({
+    category:   '',
+    projectName: '',
+    description: '',
+    budget:      '',
+    timeline:    '',
+    revisions:   '',
+    references:  '',
+    rush:        false,
+  })
 
   const f = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }))
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
+  const step1Valid = form.category && form.projectName && form.description
+  const step2Valid = form.budget && form.timeline && form.revisions
+  const allValid   = step1Valid && step2Valid
 
-  // ── Check for saved draft on open ──
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY(designer?.id))
-      if (raw) {
-        const draft = JSON.parse(raw)
-        // Only show draft prompt if it has content
-        if (draft.form && Object.values(draft.form).some((v: any) => v !== '' && v !== false)) {
-          setSavedDraft(draft)
-          setShowDraftModal(true)
-        }
-      }
-    } catch { /* ignore */ }
-  }, [designer?.id])
-
-  // ── Validation ──
-  const validate = (s: number): string | null => {
-    const required = REQUIRED[s] || []
-    for (const field of required) {
-      const val = (form as any)[field.key]
-      if (!val || (typeof val === 'string' && !val.trim())) {
-        return `${field.label} is required.`
-      }
-    }
-    return null
-  }
-
-  const handleContinue = () => {
-    const err = validate(step)
-    if (err) { setStepError(err); return }
-    setStepError(null)
-    setStep(s => s + 1)
-  }
-
-  // ── Save Draft ──
-  const saveDraft = () => {
-    try {
-      localStorage.setItem(DRAFT_KEY(designer?.id), JSON.stringify({ form, step, savedAt: new Date().toISOString() }))
-      setStepError(null)
-      alert('Draft saved! You can resume this brief next time you open it.')
-    } catch {
-      alert('Could not save draft.')
-    }
-  }
-
-  const clearDraft = () => {
-    try { localStorage.removeItem(DRAFT_KEY(designer?.id)) } catch { /* ignore */ }
-  }
-
-  const resumeDraft = () => {
-    if (!savedDraft) return
-    setForm(savedDraft.form || EMPTY_FORM)
-    setStep(savedDraft.step || 1)
-    setShowDraftModal(false)
-  }
-
-  const startFresh = () => {
-    clearDraft()
-    setForm({ ...EMPTY_FORM })
-    setStep(1)
-    setShowDraftModal(false)
-  }
-
-  // ── Handle close with confirmation ──
-  const handleClose = () => {
-    const hasContent = Object.values(form).some((v: any) => v !== '' && v !== false)
-    if (hasContent) {
-      setShowAbandonModal(true)
-    } else {
-      clearDraft()
-      onClose()
-    }
-  }
-
-  // ── Submit ──
   const handleSubmit = async () => {
-    const err = validate(3)
-    if (err) { setStepError(err); return }
-    if (!user) { alert('Please log in to submit a brief.'); return }
+    if (!user) { setError('Please log in to submit a brief.'); return }
+    if (!allValid)    { setError('Please complete all required fields.'); return }
 
-    setSubmitting(true)
+    setSubmitting(true); setError('')
+
     try {
-      const brief = `Category: ${form.category}\n\nProject: ${form.title}\n\nDescription: ${form.description}\n\nIndustry: ${form.industry}\nAudience: ${form.audience}\nTone: ${form.tone}\n\nColours: ${form.colours || 'Not specified'}\nReferences: ${form.references || 'None'}\n\nNotes: ${form.notes || 'None'}`
+      // Save order to Supabase
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({
+          client_id:    user.id,
+          designer_id:  designer.id,
+          project_name: form.projectName,
+          category:     form.category,
+          brief:        form.description,
+          amount:       parseBudgetMin(form.budget),
+          status:       'pending',
+          deadline:     form.timeline,
+          revisions_total: parseRevisions(form.revisions),
+          rush:         form.rush,
+          references:   form.references,
+        })
+        .select()
+        .single()
 
-      const { data, error } = await supabase.from('orders').insert([{
-        client_id:    user.id,
-        designer_id:  designer.id,
-        project_name: form.title,
-        brief,
-        amount:       Number(form.budget) || 0,
-        rush:         form.rush,
-        deadline:     form.deadline,
-        status:       'pending',
-        revisions_used:  0,
-        revisions_total: 3,
-      }]).select().single()
+      if (orderErr) throw orderErr
 
-      if (error) { alert(error.message); setSubmitting(false); return }
+      // Notify designer via email (works even when offline)
+      const clientName = user.user_metadata?.full_name || user.email || 'A client'
+      await notifyDesigner(
+        { email: designer.email, name: designer.name },
+        clientName,
+        form.projectName
+      )
 
-      clearDraft()
-      onOrderCreated(data)
+      onOrderCreated(order)
     } catch (err: any) {
-      alert(err?.message || 'Failed to submit brief. Please try again.')
+      setError(err?.message || 'Failed to submit brief. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
-  const STEPS = ['Project Details', 'Brand & Audience', 'Budget & Timeline', 'Review']
+  const parseBudgetMin = (b: string): number => {
+    const match = b.match(/[\d,]+/)
+    return match ? parseInt(match[0].replace(',', '')) : 0
+  }
 
-  const CATEGORY_OPTIONS = [
-    '',
-    'Logo Design',
-    'Business Branding',
-    'Flyer Design',
-    'Social Media Design',
-    'UI/UX Design',
-    'Motion Graphics',
-    'Print Design',
-    'Packaging Design',
-  ]
+  const parseRevisions = (r: string): number => {
+    if (r.includes('Unlimited')) return 99
+    const n = r.match(/\d/)
+    return n ? parseInt(n[0]) : 3
+  }
 
-  const TONE_OPTIONS = [
-    '',
-    'Professional & Corporate',
-    'Bold & Energetic',
-    'Elegant & Luxury',
-    'Friendly & Approachable',
-    'Minimalist & Clean',
-    'Playful & Creative',
-    'Traditional & Cultural',
-  ]
-
-  const BUDGET_OPTIONS = [
-    '',
-    'GH₵50 – GH₵150',
-    'GH₵150 – GH₵300',
-    'GH₵300 – GH₵600',
-    'GH₵600 – GH₵1,000',
-    'GH₵1,000 – GH₵2,000',
-    'GH₵2,000+',
-    'Open to discussion',
-  ]
-
-  const DEADLINE_OPTIONS = [
-    '',
-    '24 hours (Rush)',
-    '2–3 days',
-    '1 week',
-    '2 weeks',
-    '1 month',
-    'Flexible',
+  const STEPS = [
+    { n: 1, label: 'Project' },
+    { n: 2, label: 'Details' },
+    { n: 3, label: 'Review'  },
   ]
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 220, background: S.bgDeep, overflowY: 'auto' }}>
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(14px)' }} />
 
-      {/* ── Draft recovery modal ── */}
-      {showDraftModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: S.surface, border: `1px solid ${S.gold}30`, padding: isMobile ? '24px 20px' : '32px 36px', maxWidth: 440, width: '100%', borderRadius: S.radiusLg }}>
-            <Lbl style={{ marginBottom: 10, color: S.gold }}>Draft Found</Lbl>
-            <Hl style={{ fontSize: 20, marginBottom: 10 }}>Continue your brief?</Hl>
-            {savedDraft?.savedAt && (
-              <Body style={{ fontSize: 12, marginBottom: 16 }}>
-                Saved {new Date(savedDraft.savedAt).toLocaleString()}
-              </Body>
-            )}
-            <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8 }}>
-              You have a saved draft for <strong style={{ color: S.text }}>{designer?.name}</strong>. Would you like to continue where you left off?
-            </Body>
-            <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
-              <Btn variant="ghost" full onClick={startFresh}>Start Fresh</Btn>
-              <Btn variant="gold"  full onClick={resumeDraft}>Continue Draft →</Btn>
-            </div>
-          </div>
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0, left: 0, right: 0,
+        zIndex: 300,
+        background: '#111114',
+        border: '1px solid rgba(201,168,76,0.14)',
+        borderRadius: '20px 20px 0 0',
+        maxHeight: '96dvh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 -24px 64px rgba(0,0,0,0.7)',
+        // Desktop: centered modal
+        ...(window.innerWidth >= 640 ? {
+          bottom: 'auto', top: '50%', left: '50%', right: 'auto',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: 16, width: '100%', maxWidth: 560,
+          maxHeight: '90vh',
+        } : {}),
+      }}>
+
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.1)' }} />
         </div>
-      )}
-
-      {/* ── Abandon confirmation ── */}
-      {showAbandonModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: isMobile ? '24px 20px' : '32px 36px', maxWidth: 400, width: '100%', borderRadius: S.radiusLg }}>
-            <Hl style={{ fontSize: 20, marginBottom: 10 }}>Leave without saving?</Hl>
-            <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.8 }}>Your brief progress will be lost unless you save a draft first.</Body>
-            <div style={{ display: 'flex', gap: 10, flexDirection: isMobile ? 'column' : 'row' }}>
-              <Btn variant="ghost"   full onClick={() => setShowAbandonModal(false)}>Keep Editing</Btn>
-              <Btn variant="outline" full onClick={() => { saveDraft(); setShowAbandonModal(false); onClose() }}>Save Draft & Exit</Btn>
-              <Btn variant="danger"  full onClick={() => { clearDraft(); onClose() }}>Discard & Exit</Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: isMobile ? '24px 16px 60px' : '48px 40px 60px' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <Lbl style={{ marginBottom: 10, color: S.gold }}>Hiring {designer?.name}</Lbl>
-            <Hl style={{ fontSize: isMobile ? 28 : 40, fontWeight: 300, lineHeight: 1.1 }}>
-              Build Your Brief
-            </Hl>
-            <GoldLine />
-          </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Btn variant="ghost" size="sm" onClick={saveDraft}>Save Draft</Btn>
-            <Btn variant="ghost" size="sm" onClick={handleClose}>✕ Close</Btn>
-          </div>
-        </div>
-
-        {/* Step indicators */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 36, background: S.borderFaint }}>
-          {STEPS.map((label, i) => {
-            const n = i + 1
-            const active = n === step
-            const done   = n < step
-            return (
-              <div
-                key={n}
-                onClick={() => done ? setStep(n) : undefined}
-                style={{
-                  flex: 1, padding: isMobile ? '10px 4px' : '14px 8px', textAlign: 'center',
-                  background: active ? S.goldDim : done ? 'rgba(201,168,76,0.06)' : S.bgLow,
-                  borderRight: i < 3 ? `1px solid ${S.borderFaint}` : 'none',
-                  cursor: done ? 'pointer' : 'default',
-                  transition: 'background 0.2s',
-                }}
-              >
-                <div style={{ color: active ? S.gold : done ? S.gold : S.textFaint, fontSize: isMobile ? 9 : 10, fontFamily: S.headline, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  {done ? '✓ ' : `${n}. `}{!isMobile && label}
-                </div>
-                {isMobile && <div style={{ color: active ? S.gold : S.textFaint, fontSize: 7, marginTop: 2, fontFamily: S.headline }}>{label}</div>}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* ── STEP 1: Project Details ── */}
-        {step === 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 4 }}>Project Details</Hl>
-            <Body style={{ fontSize: 13, color: S.textMuted }}>Tell your designer what you need. Be as specific as possible.</Body>
-
-            <Sel
-              label="Project Category *"
-              options={CATEGORY_OPTIONS}
-              value={form.category}
-              onChange={(v: string) => f('category', v)}
-            />
-
-            <Inp
-              label="Project Title *"
-              placeholder="e.g. Logo for my fashion brand Kente & Co."
-              value={form.title}
-              onChange={(v: string) => f('title', v)}
-            />
-
-            <Txt
-              label="Project Description *"
-              placeholder="Describe what you need in detail. Include what the design will be used for, any specific requirements, what you like or dislike about similar designs, and what makes your brand unique..."
-              value={form.description}
-              onChange={(v: string) => f('description', v)}
-              rows={5}
-            />
-
-            <Txt
-              label="Reference Links or Inspiration"
-              placeholder="Links to logos, websites, or designs you like (e.g. Behance links, Instagram posts, competitor brands)..."
-              value={form.references}
-              onChange={(v: string) => f('references', v)}
-              rows={3}
-            />
-          </div>
-        )}
-
-        {/* ── STEP 2: Brand & Audience ── */}
-        {step === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 4 }}>Brand & Audience</Hl>
-            <Body style={{ fontSize: 13, color: S.textMuted }}>Help your designer understand your world.</Body>
-
-            <Inp
-              label="Industry / Sector *"
-              placeholder="e.g. Fashion, Real Estate, Food & Beverage, Tech Startup, Healthcare..."
-              value={form.industry}
-              onChange={(v: string) => f('industry', v)}
-            />
-
-            <Inp
-              label="Target Audience *"
-              placeholder="e.g. Young professionals aged 25–35 in Accra, luxury shoppers, students..."
-              value={form.audience}
-              onChange={(v: string) => f('audience', v)}
-            />
-
-            <Sel
-              label="Brand Tone / Personality *"
-              options={TONE_OPTIONS}
-              value={form.tone}
-              onChange={(v: string) => f('tone', v)}
-            />
-
-            <Inp
-              label="Preferred Colours"
-              placeholder="e.g. Gold and black, earthy tones, our brand colours are #C9A84C and #131313..."
-              value={form.colours}
-              onChange={(v: string) => f('colours', v)}
-            />
-          </div>
-        )}
-
-        {/* ── STEP 3: Budget & Timeline ── */}
-        {step === 3 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 4 }}>Budget & Timeline</Hl>
-            <Body style={{ fontSize: 13, color: S.textMuted }}>Be realistic — quality takes time and investment.</Body>
-
-            <Sel
-              label="Budget Range *"
-              options={BUDGET_OPTIONS}
-              value={form.budget}
-              onChange={(v: string) => f('budget', v)}
-            />
-
-            <Sel
-              label="Deadline *"
-              options={DEADLINE_OPTIONS}
-              value={form.deadline}
-              onChange={(v: string) => f('deadline', v)}
-            />
-
-            {/* Rush toggle */}
-            <div
-              onClick={() => f('rush', !form.rush)}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                background: form.rush ? 'rgba(252,211,77,0.08)' : S.surface,
-                border: `1px solid ${form.rush ? 'rgba(252,211,77,0.3)' : S.borderFaint}`,
-                padding: '16px 20px', cursor: 'pointer', borderRadius: S.radiusSm,
-                transition: 'all 0.2s',
-              }}
-            >
-              <div>
-                <Hl style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>⚡ Rush Order</Hl>
-                <Body style={{ fontSize: 12, margin: 0 }}>Needed within 24–48 hours. May incur a rush fee.</Body>
-              </div>
-              <div style={{ width: 44, height: 24, background: form.rush ? S.gold : S.borderFaint, borderRadius: 12, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                <div style={{ position: 'absolute', top: 3, left: form.rush ? 23 : 3, width: 18, height: 18, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
-              </div>
-            </div>
-
-            <Txt
-              label="Additional Notes"
-              placeholder="Anything else your designer should know. Files you'll provide, file formats you need, number of revisions expected, languages to include..."
-              value={form.notes}
-              onChange={(v: string) => f('notes', v)}
-              rows={3}
-            />
-          </div>
-        )}
-
-        {/* ── STEP 4: Review & Submit ── */}
-        {step === 4 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 4 }}>Review Your Brief</Hl>
-            <Body style={{ fontSize: 13, color: S.textMuted }}>Check everything before sending to {designer?.name}.</Body>
-
-            <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: '24px' }}>
-              {/* Designer preview */}
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${S.borderFaint}` }}>
-                <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${S.gold}40`, flexShrink: 0 }}>
-                  <img src={designer?.portrait} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(60%)' }} />
-                </div>
-                <div>
-                  <Hl style={{ fontSize: 16, fontWeight: 600 }}>{designer?.name}</Hl>
-                  <Body style={{ fontSize: 12, margin: 0 }}>{designer?.category} · Starting at GH₵{designer?.price}</Body>
-                </div>
-              </div>
-
-              {/* Brief summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
-                {[
-                  { l: 'Category',   v: form.category    },
-                  { l: 'Title',      v: form.title        },
-                  { l: 'Industry',   v: form.industry     },
-                  { l: 'Audience',   v: form.audience     },
-                  { l: 'Tone',       v: form.tone         },
-                  { l: 'Budget',     v: form.budget       },
-                  { l: 'Deadline',   v: form.deadline     },
-                  { l: 'Rush Order', v: form.rush ? '⚡ Yes' : 'No' },
-                ].map(item => (
-                  <div key={item.l}>
-                    <Lbl style={{ marginBottom: 4, fontSize: 8 }}>{item.l}</Lbl>
-                    <Body style={{ fontSize: 13, margin: 0, color: S.text }}>{item.v || '—'}</Body>
-                  </div>
-                ))}
-              </div>
-
-              {form.description && (
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${S.borderFaint}` }}>
-                  <Lbl style={{ marginBottom: 8, fontSize: 8 }}>Description</Lbl>
-                  <Body style={{ fontSize: 13, lineHeight: 1.8 }}>{form.description}</Body>
-                </div>
-              )}
-            </div>
-
-            {/* Escrow notice */}
-            <div style={{ background: 'rgba(74,154,74,0.06)', border: '1px solid rgba(74,154,74,0.2)', padding: '14px 18px', borderRadius: S.radiusSm }}>
-              <Body style={{ fontSize: 12, margin: 0, lineHeight: 1.8 }}>
-                🔒 <strong style={{ color: S.text }}>Secure Escrow:</strong> Your payment will be held safely until you approve the final work. You only release funds when you're satisfied.
+        <div style={{ padding: 'clamp(14px,4vw,20px) clamp(20px,5vw,28px) 0', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div>
+              <Lbl style={{ marginBottom: 6, fontSize: 9 }}>New Brief</Lbl>
+              <Hl style={{ fontSize: 'clamp(16px,4vw,20px)', fontWeight: 600 }}>
+                {designer?.name}
+              </Hl>
+              <Body style={{ fontSize: 'clamp(11px,2.5vw,13px)', marginTop: 2 }}>
+                {designer?.category}
               </Body>
             </div>
+            <button onClick={onClose}
+              style={{ background: 'none', border: 'none', color: S.textFaint, fontSize: 22, cursor: 'pointer', padding: '4px 8px' }}
+            >×</button>
           </div>
-        )}
 
-        {/* Error */}
-        {stepError && (
-          <div style={{ marginTop: 16, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.24)', padding: '12px 14px', borderRadius: S.radiusSm }}>
-            <Body style={{ color: S.danger, fontSize: 12, margin: 0 }}>⚠ {stepError}</Body>
+          {/* Step indicator */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+            {STEPS.map(s => (
+              <div key={s.n} style={{ flex: 1 }}>
+                <div style={{
+                  height: 3, borderRadius: 99, marginBottom: 4,
+                  background: step >= s.n ? S.gold : 'rgba(255,255,255,0.08)',
+                  transition: 'background 0.25s',
+                }} />
+                <span style={{
+                  fontFamily: S.headline,
+                  fontSize: 9, letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: step >= s.n ? S.gold : S.textFaint,
+                  transition: 'color 0.25s',
+                }}>
+                  {s.n}. {s.label}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Navigation */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 28, flexDirection: isMobile ? 'column' : 'row' }}>
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px clamp(20px,5vw,28px)', WebkitOverflowScrolling: 'touch' as any }}>
+
+          {/* ── Step 1: Project ── */}
+          {step === 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SelectField
+                label="Service Category *"
+                value={form.category}
+                onChange={v => f('category', v)}
+                options={CATEGORIES}
+                placeholder="Select a category ▾"
+              />
+              <TextField
+                label="Project Name *"
+                value={form.projectName}
+                onChange={v => f('projectName', v)}
+                placeholder="e.g. Brand identity for my startup"
+              />
+              <TextAreaField
+                label="Project Description *"
+                value={form.description}
+                onChange={v => f('description', v)}
+                placeholder="Describe what you need. Include goals, audience, and any style references."
+                rows={5}
+              />
+              <TextField
+                label="Reference Links"
+                value={form.references}
+                onChange={v => f('references', v)}
+                placeholder="Paste links to designs you like (optional)"
+              />
+            </div>
+          )}
+
+          {/* ── Step 2: Details ── */}
+          {step === 2 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <SelectField
+                label="Budget Range *"
+                value={form.budget}
+                onChange={v => f('budget', v)}
+                options={BUDGETS}
+                placeholder="Select your budget ▾"
+              />
+              <SelectField
+                label="Timeline *"
+                value={form.timeline}
+                onChange={v => f('timeline', v)}
+                options={TIMELINES}
+                placeholder="Select a timeline ▾"
+              />
+              <SelectField
+                label="Revision Rounds *"
+                value={form.revisions}
+                onChange={v => f('revisions', v)}
+                options={REVISION_OPTIONS}
+                placeholder="How many revisions? ▾"
+              />
+
+              {/* Rush toggle */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: form.rush ? 'rgba(201,168,76,0.06)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${form.rush ? 'rgba(201,168,76,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: 8, padding: 'clamp(12px,3vw,16px)',
+                cursor: 'pointer', transition: 'all 0.18s',
+              }} onClick={() => f('rush', !form.rush)}>
+                <div>
+                  <span style={{ fontFamily: S.headline, fontSize: 'clamp(12px,3vw,14px)', color: S.text, display: 'block', marginBottom: 3 }}>
+                    Rush Delivery
+                  </span>
+                  <span style={{ fontFamily: S.body, fontSize: 'clamp(11px,2.5vw,12px)', color: S.textMuted }}>
+                    Faster turnaround — may affect price
+                  </span>
+                </div>
+                <div style={{
+                  width: 44, height: 24, borderRadius: 99,
+                  background: form.rush ? S.gold : 'rgba(255,255,255,0.1)',
+                  position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                }}>
+                  <div style={{
+                    position: 'absolute', top: 3,
+                    left: form.rush ? 23 : 3,
+                    width: 18, height: 18,
+                    borderRadius: '50%', background: '#fff',
+                    transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Review ── */}
+          {step === 3 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Body style={{ fontSize: 'clamp(13px,3vw,14px)', marginBottom: 4 }}>
+                Review your brief before submitting.
+              </Body>
+
+              {[
+                { label: 'Designer',     value: designer?.name           },
+                { label: 'Category',     value: form.category            },
+                { label: 'Project',      value: form.projectName         },
+                { label: 'Budget',       value: form.budget              },
+                { label: 'Timeline',     value: form.timeline            },
+                { label: 'Revisions',    value: form.revisions           },
+                { label: 'Rush',         value: form.rush ? 'Yes' : 'No' },
+              ].map(row => (
+                <div key={row.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                  padding: 'clamp(10px,2.5vw,13px) 0',
+                  borderBottom: `1px solid ${S.borderFaint}`,
+                  gap: 12,
+                }}>
+                  <Lbl style={{ fontSize: 9, marginBottom: 0, flexShrink: 0 }}>{row.label}</Lbl>
+                  <span style={{
+                    fontFamily: S.body, color: S.text,
+                    fontSize: 'clamp(12px,3vw,14px)',
+                    textAlign: 'right', lineHeight: 1.4,
+                  }}>
+                    {row.value || '—'}
+                  </span>
+                </div>
+              ))}
+
+              {form.description && (
+                <div style={{ marginTop: 4 }}>
+                  <Lbl style={{ fontSize: 9, marginBottom: 6 }}>Description</Lbl>
+                  <p style={{
+                    fontFamily: S.body, color: S.textMuted,
+                    fontSize: 'clamp(12px,3vw,14px)',
+                    lineHeight: 1.7, margin: 0,
+                    background: 'rgba(255,255,255,0.03)',
+                    padding: 12, borderRadius: 8,
+                  }}>
+                    {form.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Security note */}
+              <div style={{
+                background: 'rgba(201,168,76,0.05)',
+                border: '1px solid rgba(201,168,76,0.12)',
+                borderRadius: 8,
+                padding: 'clamp(12px,3vw,14px)',
+                marginTop: 4,
+              }}>
+                <p style={{ fontFamily: S.body, color: S.textMuted, fontSize: 'clamp(11px,2.5vw,13px)', margin: 0, lineHeight: 1.7 }}>
+                  🔒 Your payment is held in <strong style={{ color: S.text }}>escrow</strong> until you approve the final delivery. The designer will be notified immediately by email.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)', borderRadius: 8, padding: 12, marginTop: 12 }}>
+              <p style={{ fontFamily: S.body, color: S.danger, fontSize: 'clamp(12px,3vw,13px)', margin: 0 }}>{error}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer buttons */}
+        <div style={{
+          padding: 'clamp(14px,4vw,20px) clamp(20px,5vw,28px)',
+          borderTop: `1px solid ${S.borderFaint}`,
+          display: 'flex', gap: 10, flexShrink: 0,
+          background: '#111114',
+        }}>
           {step > 1 && (
-            <Btn variant="ghost" full={isMobile} onClick={() => { setStep(s => s - 1); setStepError(null) }}>← Back</Btn>
+            <Btn variant="ghost" onClick={() => setStep(s => (s - 1) as any)} full>← Back</Btn>
           )}
-          {step < 4 && (
-            <Btn variant="gold" full onClick={handleContinue}>Continue →</Btn>
+          {step === 1 && (
+            <Btn variant="ghost" onClick={onClose} full>Cancel</Btn>
           )}
-          {step === 4 && (
-            <Btn variant="gold" full onClick={handleSubmit} disabled={submitting}>
-              {submitting ? 'Submitting...' : `Send Brief to ${designer?.name} →`}
+
+          {step < 3 ? (
+            <Btn
+              variant="gold"
+              onClick={() => {
+                if (step === 1 && !step1Valid) { setError('Fill in all required fields.'); return }
+                setError('')
+                setStep(s => (s + 1) as any)
+              }}
+              full
+            >
+              Next: {step === 1 ? 'Project Details' : 'Review Brief'} →
+            </Btn>
+          ) : (
+            <Btn variant="gold" onClick={handleSubmit} disabled={submitting} full>
+              {submitting ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)',
+                    borderTopColor: '#131313', borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite', display: 'inline-block',
+                  }} />
+                  Submitting…
+                </span>
+              ) : 'Submit Brief →'}
             </Btn>
           )}
         </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
-    </div>
+    </>
   )
 }

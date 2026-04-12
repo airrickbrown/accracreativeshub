@@ -1,0 +1,302 @@
+// ── src/components/LoadingSpinner.tsx ──
+// Global loading overlay for slow connections.
+// Shows a spinning indicator with connectivity-aware messaging.
+// Use this on any async action that might take a moment on bad networks.
+
+import React, { useEffect, useState } from 'react'
+import { S } from '../styles/tokens'
+
+interface SpinnerProps {
+  message?:  string
+  fullPage?: boolean    // true = covers whole screen
+  size?:     'sm' | 'md' | 'lg'
+}
+
+export function LoadingSpinner({ message, fullPage = false, size = 'md' }: SpinnerProps) {
+  const [slow, setSlow] = useState(false)
+
+  // If loading takes more than 4s, show slow connection note
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
+
+  const dim = { sm: 20, md: 32, lg: 48 }[size]
+
+  const inner = (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      {/* Ring spinner */}
+      <div style={{
+        width: dim, height: dim,
+        border: `${dim <= 20 ? 2 : 3}px solid rgba(201,168,76,0.15)`,
+        borderTopColor: S.gold,
+        borderRadius: '50%',
+        animation: 'ach_spin 0.75s linear infinite',
+        flexShrink: 0,
+      }} />
+      {message && (
+        <p style={{
+          fontFamily: S.body, color: S.textMuted,
+          fontSize: 'clamp(12px, 3vw, 14px)',
+          margin: 0, textAlign: 'center',
+          lineHeight: 1.5,
+        }}>
+          {message}
+        </p>
+      )}
+      {slow && (
+        <p style={{
+          fontFamily: S.body, color: S.textFaint,
+          fontSize: 11, margin: 0, textAlign: 'center',
+        }}>
+          Slow connection detected — still trying…
+        </p>
+      )}
+      <style>{`@keyframes ach_spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+
+  if (!fullPage) return inner
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 400,
+      background: 'rgba(5,5,5,0.9)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }}>
+      {inner}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── src/components/NotFoundPage.tsx ──
+// Shows when a route is not found OR when the connection is lost.
+// Also used by ErrorBoundary for runtime crashes.
+
+export function NotFoundPage({ onHome }: { onHome?: () => void }) {
+  const [offline, setOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const goOffline = () => setOffline(true)
+    const goOnline  = () => setOffline(false)
+    window.addEventListener('offline', goOffline)
+    window.addEventListener('online',  goOnline)
+    return () => {
+      window.removeEventListener('offline', goOffline)
+      window.removeEventListener('online',  goOnline)
+    }
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: '#080808',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: 'clamp(24px, 6vw, 48px)',
+      fontFamily: 'Georgia, serif',
+      textAlign: 'center',
+    }}>
+      {/* Icon */}
+      <div style={{ color: S.gold, fontSize: 'clamp(36px, 8vw, 52px)', marginBottom: 20 }}>
+        {offline ? '◌' : '◈'}
+      </div>
+
+      {/* Code */}
+      <div style={{
+        fontFamily: S.headline, color: S.textFaint,
+        fontSize: 'clamp(9px, 2vw, 11px)',
+        letterSpacing: '0.3em', textTransform: 'uppercase',
+        marginBottom: 12,
+      }}>
+        {offline ? 'Connection Lost' : '404 — Not Found'}
+      </div>
+
+      {/* Heading */}
+      <h1 style={{
+        fontFamily: S.headline, fontWeight: 300,
+        color: S.text, fontSize: 'clamp(22px, 5vw, 36px)',
+        margin: '0 0 14px', lineHeight: 1.2,
+      }}>
+        {offline
+          ? "You're offline."
+          : "This page doesn't exist."}
+      </h1>
+
+      {/* Body */}
+      <p style={{
+        fontFamily: S.body, color: S.textMuted,
+        fontSize: 'clamp(13px, 3vw, 16px)',
+        lineHeight: 1.75, margin: '0 0 clamp(24px, 5vw, 36px)',
+        maxWidth: 380,
+      }}>
+        {offline
+          ? 'Check your internet connection and try again. Your session will resume automatically when you reconnect.'
+          : 'The page you\'re looking for has moved or doesn\'t exist. Head back to the platform.'}
+      </p>
+
+      {/* Retry / Home */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {offline && (
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: `1px solid ${S.border}`,
+              color: S.text,
+              padding: 'clamp(11px,3vw,14px) clamp(20px,4vw,28px)',
+              borderRadius: 8,
+              fontFamily: S.headline, fontSize: 10,
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              cursor: 'pointer', transition: 'all 0.18s',
+            }}
+          >
+            Try Again
+          </button>
+        )}
+        <button
+          onClick={onHome ?? (() => { window.history.replaceState({}, '', '/'); window.location.reload() })}
+          style={{
+            background: S.gold, border: 'none', color: '#131313',
+            padding: 'clamp(11px,3vw,14px) clamp(20px,4vw,28px)',
+            borderRadius: 8,
+            fontFamily: S.headline, fontSize: 10,
+            letterSpacing: '0.15em', textTransform: 'uppercase',
+            fontWeight: 700, cursor: 'pointer', transition: 'all 0.18s',
+          }}
+        >
+          ← Back to Platform
+        </button>
+      </div>
+
+      {/* Auto-retry when back online */}
+      {offline && (
+        <p style={{
+          fontFamily: S.body, color: S.textFaint, fontSize: 11,
+          marginTop: 20,
+          animation: 'ach_pulse 2s ease infinite',
+        }}>
+          Watching for connection…
+        </p>
+      )}
+
+      <style>{`
+        @keyframes ach_pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+      `}</style>
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── src/components/HelpButton.tsx ──
+// Floating help button that appears on every page.
+// Clicking scrolls to top / takes user back to homepage.
+// Also doubles as a "back to top" shortcut.
+
+export function HelpButton({ onHome }: { onHome?: () => void }) {
+  const [show, setShow]       = useState(false)
+  const [hover, setHover]     = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  // Show button after user scrolls down 300px
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 300)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const goHome = () => {
+    if (onHome) { onHome(); return }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  if (!show && !expanded) return null
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 'clamp(20px, 4vw, 28px)',
+      right:  'clamp(16px, 4vw, 24px)',
+      zIndex: 180,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+      gap: 8,
+    }}>
+      {/* Expanded menu */}
+      {expanded && (
+        <div style={{
+          background: '#131313',
+          border: `1px solid rgba(201,168,76,0.2)`,
+          borderRadius: 12,
+          padding: '6px',
+          display: 'flex', flexDirection: 'column', gap: 2,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          animation: 'help_in 0.2s ease',
+          minWidth: 180,
+        }}>
+          {[
+            { icon: '⌂', label: 'Back to Home',    fn: goHome         },
+            { icon: '↑', label: 'Scroll to Top',   fn: () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setExpanded(false) } },
+            { icon: '✉', label: 'Contact Support', fn: () => { window.location.href = 'mailto:hello@accracreativeshub.com'; setExpanded(false) } },
+          ].map(item => (
+            <button
+              key={item.label}
+              onClick={item.fn}
+              style={{
+                background: 'none', border: 'none',
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 14px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontFamily: S.body,
+                fontSize: 'clamp(12px, 3vw, 13px)',
+                color: S.text,
+                transition: 'background 0.15s',
+                textAlign: 'left',
+                width: '100%',
+              }}
+              onMouseEnter={(e: any) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={(e: any) => (e.currentTarget.style.background = 'none')}
+            >
+              <span style={{ color: S.gold, fontSize: 14, width: 18, textAlign: 'center' }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Main FAB button */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          width: 'clamp(44px, 10vw, 52px)',
+          height: 'clamp(44px, 10vw, 52px)',
+          borderRadius: '50%',
+          background: expanded ? S.gold : hover ? S.gold : '#131313',
+          border: `2px solid ${expanded ? 'transparent' : 'rgba(201,168,76,0.35)'}`,
+          color: expanded ? '#131313' : hover ? '#131313' : S.gold,
+          fontSize: 18,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: hover ? '0 6px 24px rgba(201,168,76,0.3)' : '0 4px 16px rgba(0,0,0,0.4)',
+          transition: 'all 0.2s ease',
+          transform: hover ? 'scale(1.05)' : 'scale(1)',
+        }}
+        aria-label="Help"
+      >
+        {expanded ? '×' : '?'}
+      </button>
+
+      <style>{`
+        @keyframes help_in {
+          from { opacity: 0; transform: translateY(8px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+    </div>
+  )
+}
