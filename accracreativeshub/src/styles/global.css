@@ -1,0 +1,86 @@
+/* ── src/styles/global.css ──
+   Global responsive rules that affect the entire platform.
+   Import this in main.tsx: import './styles/global.css'
+*/
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Prevent iOS font size adjustment */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Base typography — scales with viewport */
+body {
+  font-family: 'Manrope', Arial, sans-serif;
+  font-size: clamp(14px, 3vw, 16px);
+  line-height: 1.6;
+  color: #f0ede8;
+  background: #080808;
+  overflow-x: hidden;
+}
+
+/* Prevent inputs from zooming on iOS (must be 16px+) */
+input, select, textarea {
+  font-size: 16px !important;
+  font-family: inherit;
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Remove tap highlight on mobile */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 99px; }
+
+/* Placeholder text */
+::placeholder { color: #555; opacity: 1; }
+
+/* Select option dark mode */
+select option { background: #0d0d0d; color: #f0ede8; }
+
+/* Links */
+a { color: #c9a84c; }
+
+/* ── Responsive section padding ── */
+section {
+  padding: clamp(60px, 10vw, 120px) clamp(20px, 5vw, 60px);
+}
+
+/* ── Responsive grid helpers ── */
+.grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: clamp(12px, 3vw, 20px);
+}
+
+/* ── Hide on mobile ── */
+@media (max-width: 640px) {
+  .hide-mobile { display: none !important; }
+}
+
+/* ── Hide on desktop ── */
+@media (min-width: 641px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.9; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

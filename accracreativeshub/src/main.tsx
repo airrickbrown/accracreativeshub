@@ -6,6 +6,7 @@ import App from './App'
 import { AuthProvider } from './AuthContext'
 import PasswordResetPage from './components/PasswordResetPage'
 import ErrorBoundary from './components/ErrorBoundary'
+import './styles/global.css'
 
 function start() {
   const hash = window.location.hash
