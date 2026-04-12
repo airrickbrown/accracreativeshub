@@ -84,7 +84,7 @@ export default function Nav({
         {/* ── Logo ── */}
         <div
           onClick={() => { onMarketplace(); close() }}
-          style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14, cursor: 'pointer', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 8, cursor: 'pointer', flexShrink: 0 }}
         >
           {/* 
             Logo image with black background removed.
@@ -121,18 +121,16 @@ export default function Nav({
             }}>
               ACCRA CREATIVES HUB
             </div>
-            {!isMobile && (
-              <div style={{
-                fontFamily:    S.body,
-                fontSize:      9,
-                color:         S.textFaint,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                marginTop:     4,
-              }}>
-                Ghana's Creative Marketplace
-              </div>
-            )}
+            <div style={{
+              fontFamily:    S.body,
+              fontSize:      isMobile ? 8 : 9,
+              color:         S.textFaint,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              marginTop:     3,
+            }}>
+              Ghana's Creative Marketplace
+            </div>
           </div>
         </div>
 

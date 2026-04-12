@@ -455,7 +455,6 @@ export default function App() {
               onMouseEnter={(e: any) => { if (s.action) e.currentTarget.style.background = S.surface }}
               onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = 'transparent' }}
             >
-              <div style={{ position: 'absolute', top: 12, right: 16, color: `${S.gold}06`, fontFamily: S.headline, fontSize: 80, fontWeight: 300, userSelect: 'none' }}>{s.n}</div>
               <div style={{ position: 'relative' }}>
                 <div style={{ color: S.gold, fontSize: 28, marginBottom: 12 }}>{s.i}</div>
                 <Lbl style={{ marginBottom: 8, color: S.gold }}>{s.n}</Lbl>
