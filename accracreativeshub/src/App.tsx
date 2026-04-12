@@ -430,9 +430,9 @@ export default function App() {
             { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.', action: null },
           ].map((s, i) => (
             <div key={i} onClick={s.action || undefined}
-              style={{ background: S.bgLow, padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
+              style={{ background: 'transparent', padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
               onMouseEnter={(e: any) => { if (s.action) e.currentTarget.style.background = S.surface }}
-              onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = S.bgLow }}
+              onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = 'transparent' }}
             >
               <div style={{ position: 'absolute', top: 12, right: 16, color: `${S.gold}06`, fontFamily: S.headline, fontSize: 80, fontWeight: 300, userSelect: 'none' }}>{s.n}</div>
               <div style={{ position: 'relative' }}>
