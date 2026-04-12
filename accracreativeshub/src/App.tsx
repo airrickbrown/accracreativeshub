@@ -589,7 +589,19 @@ export default function App() {
           </div>
         </div>
       </footer>
-      <HelpButton onHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+      <HelpButton
+        onHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        isHomePage={
+          !showChat &&
+          !showAbout &&
+          !showContact &&
+          !showTerms &&
+          !showSignup &&
+          !showAdmin &&
+          !selectedDesigner &&
+          !showWelcome
+        }
+      />
     </div>
   )
 }

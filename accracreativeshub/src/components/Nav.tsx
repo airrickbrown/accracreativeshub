@@ -96,7 +96,7 @@ export default function Nav({
             src="/logo.svg"
             alt=""
             style={{
-              height:       isMobile ? 40 : 52,
+              height:       isMobile ? 52 : 68,
               width:        'auto',
               objectFit:    'contain',
               display:      'block',
