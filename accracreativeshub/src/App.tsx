@@ -12,6 +12,7 @@ import { ALL_CATS } from './lib/constants'
 import Nav from './components/Nav'
 import AuthCallback from './components/AuthCallback'
 import ClientWelcome from './components/ClientWelcome'
+import DesignerWelcome from './components/DesignerWelcome'
 import DesignerCard from './components/DesignerCard'
 import DesignerProfile from './components/DesignerProfile'
 import BriefBuilder from './components/BriefBuilder'
@@ -71,6 +72,7 @@ export default function App() {
   const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showWelcome, setShowWelcome]           = useState(false)
+  const [showDesignerWelcome, setShowDesignerWelcome] = useState(false)
   const [currentPath, setCurrentPath]           = useState(window.location.pathname)
   useOwnPresence()
 
@@ -109,7 +111,8 @@ export default function App() {
     setShowAnalytics(null);    setShowResume(null)
     setShowTerms(false);       setShowContact(false)
     setShowAbout(false);       setShowLogoutConfirm(false)
-    setShowWelcome(false);     setAuthConfig(DEFAULT_AUTH)
+    setShowWelcome(false);     setShowDesignerWelcome(false)
+    setAuthConfig(DEFAULT_AUTH)
   }, [])
 
   const handleLogout   = useCallback(() => setShowLogoutConfirm(true), [])
@@ -126,10 +129,16 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (currentPath === '/welcome' && user && isClient) { setShowWelcome(true); return }
-    if (currentPath === '/apply-designer') {
-      if (user && isDesigner) setShowSignup(true)
-      else if (!user) openAuth('signup', 'designer', 'designer')
+    if (currentPath === '/welcome' && user && isClient) {
+      setShowWelcome(true)
+      return
+    }
+    if (currentPath === '/apply-designer' && user && isDesigner) {
+      setShowDesignerWelcome(true)
+      return
+    }
+    if (currentPath === '/apply-designer' && !user) {
+      openAuth('signup', 'designer', 'designer')
     }
   }, [currentPath, user, isClient, isDesigner])
 
@@ -230,6 +239,18 @@ export default function App() {
         <ClientWelcome
           onBrowse={() => { setShowWelcome(false); scrollTo('marketplace') }}
           onMessages={() => { setShowWelcome(false); openOverlay(() => setShowChat(true)) }}
+        />
+      )}
+      {showDesignerWelcome && isDesigner && (
+        <DesignerWelcome
+          onContinue={() => {
+            setShowDesignerWelcome(false)
+            openOverlay(() => setShowSignup(true))
+          }}
+          onBrowse={() => {
+            setShowDesignerWelcome(false)
+            scrollTo('marketplace')
+          }}
         />
       )}
       {showSignup && isDesigner && <DesignerSignup onClose={() => setShowSignup(false)} />}
