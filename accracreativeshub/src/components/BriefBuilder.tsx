@@ -17,7 +17,10 @@ import { useAuth } from '../AuthContext'
 
 // ── Platform categories only ──
 const CATEGORIES = [
-  'Graphic Design',
+  'Logo Design',
+  'Business Branding',
+  'Flyer Design',
+  'Social Media Design',
   'UI/UX Design',
   'Motion Graphics',
 ]

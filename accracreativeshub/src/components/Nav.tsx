@@ -94,7 +94,7 @@ export default function Nav({
           background: 'transparent',
         }}>
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Accra Creatives Hub"
             onLoad={() => setLogoLoaded(true)}
             onError={() => setLogoLoaded(false)}

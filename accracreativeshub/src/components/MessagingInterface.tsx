@@ -80,7 +80,7 @@ const MessageInput = memo(({
 })
 
 interface ListProps {
-  orders: any[]; Order: any; loading: boolean
+  orders: any[]; activeOrder: any; loading: boolean
   isMobile: boolean; onSelect: (o: any) => void
 }
 
