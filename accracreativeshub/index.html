@@ -1,32 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    
 
-    <!--
-      FIX: Mobile auto-zoom
-      - interactive-widget=resizes-content stops keyboard from resizing layout
-      - viewport-fit=cover handles iPhone notch
-      - We do NOT use user-scalable=no (bad for accessibility)
-      - Instead we fix font-size on all inputs to 16px (see global CSS in App.tsx)
-        which prevents iOS from zooming in on focus
-    -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    <!-- ── Favicon ── -->
+    <link rel="icon" type="image/svg+xml" href="/logo.png" />
+
+    <!-- ── Viewport — critical for mobile ── -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+
+    <!-- ── Primary Meta ── -->
+    <title>Accra Creatives Hub — Ghana's Premier Creative Marketplace</title>
+    <meta name="description" content="Hire Ghana's most verified graphic designers, UI/UX designers, and motion artists. Secure escrow. Editorial curation. World-class creative talent." />
+    <meta name="keywords" content="Ghana designers, African creative talent, graphic design Ghana, UI UX designers Africa, motion graphics Ghana, hire designers Accra" />
+    <meta name="author" content="Accra Creatives Hub" />
+    <meta name="theme-color" content="#0a0a0a" />
+
+    <!-- ── Open Graph (Facebook, WhatsApp, LinkedIn previews) ── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://accracreativeshub.com/" />
+    <meta property="og:title"       content="Accra Creatives Hub — Where Africa's Best Creative Talent Meets the World" />
+    <meta property="og:description" content="Ghana's first curated marketplace for verified creative talent. Secure escrow. Editorial review. Graphic design, UI/UX, and motion graphics." />
+    <meta property="og:image"       content="https://accracreativeshub.com/og-image.png" />
+    <meta property="og:locale"      content="en_GH" />
+    <meta property="og:site_name"   content="Accra Creatives Hub" />
+
+    <!-- ── Twitter / X Card ── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@accracreativeshub" />
+    <meta name="twitter:title"       content="Accra Creatives Hub — Ghana's Premier Creative Marketplace" />
+    <meta name="twitter:description" content="Where Africa's best creative talent meets the world. Verified designers, secure escrow, real craft." />
+    <meta name="twitter:image"       content="https://accracreativeshub.com/og-image.png" />
+
+    <!-- ── Fonts ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
     />
 
-    <title>Accra Creatives Hub</title>
-    <meta name="description" content="Ghana's first curated marketplace for verified graphic designers. Secure escrow. Real reviews." />
-    <meta name="theme-color" content="#131313" />
-
-    <!-- Open Graph -->
-    <meta property="og:title"       content="Accra Creatives Hub" />
-    <meta property="og:description" content="Ghana's most curated design marketplace." />
-    <meta property="og:url"         content="https://accracreativeshub.com" />
-    <meta property="og:type"        content="website" />
+    <!-- ── Prevent flash of unstyled content ── -->
+    <style>
+      html, body, #root { background: #0a0a0a; margin: 0; padding: 0; }
+      body { font-family: 'Manrope', Arial, sans-serif; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

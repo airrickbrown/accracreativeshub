@@ -28,6 +28,7 @@ import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
+import { COPY } from './lib/copy'
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 

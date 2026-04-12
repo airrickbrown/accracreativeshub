@@ -1,190 +1,373 @@
-// ── ABOUT PAGE ──
-// Opened when user clicks "About" in the footer.
+// ── src/components/AboutPage.tsx ──
+// Full brand story using the upgraded positioning copy.
 
 import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, GoldLine, Divider } from './UI'
-import Nav from './Nav'
 
-interface AboutPageProps {
+interface Props {
   onClose:   () => void
   onSignup:  () => void
   onContact: () => void
 }
 
-export default function AboutPage({ onClose, onSignup, onContact }: AboutPageProps) {
-  const [isMobile, setIsMobile] = useState(false)
+const PILLARS = [
+  {
+    icon:  '◈',
+    title: 'Curated',
+    body:  'Every creative on our platform is reviewed and approved by our editorial board before going live. We do not list everyone. We list the best.',
+  },
+  {
+    icon:  '◉',
+    title: 'Verified',
+    body:  'Every designer carries a verified badge earned through our review process. Clients know exactly who they are hiring and what standard to expect.',
+  },
+  {
+    icon:  '◐',
+    title: 'Protected',
+    body:  'Every transaction is secured through escrow. Funds are only released when the client approves. Both sides are protected, always.',
+  },
+  {
+    icon:  '◑',
+    title: 'Preferred',
+    body:  'We are not building a cheap option. We are building the preferred one — the platform brands reach for when quality is non-negotiable.',
+  },
+]
+
+const STATS = [
+  { value: 'GH₵ 0',  label: 'Listing Fee',      sub: 'Free to join' },
+  { value: '10%',     label: 'Commission Only',   sub: 'On completed orders' },
+  { value: '100%',    label: 'Editorial Review',  sub: 'Every designer vetted' },
+  { value: 'Escrow',  label: 'Payment Security',  sub: 'Every transaction' },
+]
+
+export default function AboutPage({ onClose, onSignup, onContact }: Props) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [visible, setVisible]   = useState(false)
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768)
-    check()
+    const check = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', check)
+    setTimeout(() => setVisible(true), 60)
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const values = [
-    { icon: '◈', title: 'Curation Over Volume',    body: 'We review every designer. Quality is our non-negotiable.' },
-    { icon: '◉', title: 'Built for Ghana',          body: 'Payment, pricing, and processes designed for the Ghanaian economy.' },
-    { icon: '◐', title: 'Designers First',          body: 'Zero listing fees. 10% only when you earn. Fair for talent.' },
-    { icon: '◑', title: 'Trust Through Escrow',     body: 'Clients pay securely. Designers get paid fairly. Always.' },
-    { icon: '▣', title: 'Cultural Authenticity',    body: 'Celebrating African aesthetic intelligence on a global stage.' },
-    { icon: '◆', title: 'Radical Transparency',     body: 'No hidden fees, no surprises. Just honest commerce.' },
-  ]
-
-  const team = [
-    { initials: 'AB', name: 'Accra Creatives Hub', role: 'Platform Founder', note: 'Built with love for Ghana\'s creative community.' },
-  ]
-
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 210, background: S.bgDeep, overflowY: 'auto' }}>
-      <Nav
-        scrolled={true}
-        user={null}
-        onAdmin={() => {}}
-        onSignup={onSignup}
-        onMessages={() => {}}
-        onMarketplace={onClose}
-        onHowItWorks={onClose}
-        onForDesigners={onClose}
-        onLogin={() => {}}
-        onSignOut={() => {}}
-      />
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: S.bgDeep, overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch' as any,
+      opacity: visible ? 1 : 0,
+      transition: 'opacity 0.4s ease',
+    }}>
 
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: isMobile ? '88px 20px 60px' : '100px 40px 80px' }}>
+      {/* Close */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'rgba(5,5,5,0.92)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: `1px solid ${S.borderFaint}`,
+        padding: '16px clamp(20px,5vw,48px)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontFamily: S.headline, color: S.gold, fontSize: 'clamp(11px,2.5vw,13px)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          About Accra Creatives Hub
+        </span>
+        <Btn variant="ghost" size="sm" onClick={onClose}>← Back</Btn>
+      </div>
 
-        {/* Hero */}
-        <div style={{ marginBottom: 64, maxWidth: 680 }}>
-          <Lbl style={{ marginBottom: 16, color: S.gold }}>Our Story</Lbl>
-          <Hl style={{ fontSize: isMobile ? 36 : 60, fontWeight: 300, marginBottom: 16, lineHeight: 1.0 }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: `clamp(48px,8vw,96px) clamp(20px,5vw,48px) 80px` }}>
+
+        {/* ── HERO STATEMENT ── */}
+        <div style={{ marginBottom: 'clamp(48px,8vw,80px)' }}>
+          <Lbl style={{ marginBottom: 'clamp(12px,3vw,20px)' }}>Our Story</Lbl>
+
+          <h1 style={{
+            fontFamily: S.headline,
+            fontWeight: 300,
+            color: S.text,
+            fontSize: 'clamp(32px,8vw,64px)',
+            lineHeight: 1.05,
+            margin: '0 0 clamp(20px,4vw,32px)',
+            letterSpacing: '-0.02em',
+          }}>
             We built the platform<br />
-            <em style={{ fontStyle: 'italic', color: S.gold }}>Ghana's designers deserve.</em>
-          </Hl>
-          <GoldLine />
-          <Body style={{ fontSize: 15, lineHeight: 1.9 }}>
-            Accra Creatives Hub was born from a simple observation: Ghana's graphic design talent is
-            world-class, but the infrastructure to connect that talent with paying clients was non-existent.
-            Designers were chasing work through Instagram DMs, getting underpaid, and going without guarantees.
-            Clients were hiring blind, with no vetting and no protection. We built the bridge.
-          </Body>
+            <em style={{ color: S.gold, fontStyle: 'italic' }}>
+              Ghana&apos;s creative talent deserves.
+            </em>
+          </h1>
+
+          <GoldLine w="60px" />
         </div>
 
-        <Divider />
-
-        {/* Mission */}
-        <div style={{ margin: '48px 0', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 32 }}>
+        {/* ── THE STORY ── */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: 'clamp(32px,6vw,64px)',
+          marginBottom: 'clamp(48px,8vw,80px)',
+          alignItems: 'start',
+        }}>
           <div>
-            <Lbl style={{ marginBottom: 12, color: S.gold }}>Our Mission</Lbl>
-            <Hl style={{ fontSize: 22, fontWeight: 300, marginBottom: 16, lineHeight: 1.3 }}>
-              Elevating Ghanaian design to a global stage.
-            </Hl>
-            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
-              We curate, verify, and champion Ghana's most talented graphic designers — connecting
-              them with clients who understand the value of real craft. Every designer on our platform
-              has been reviewed by our editorial board. Every transaction is protected by escrow.
-            </Body>
+            <p style={{
+              fontFamily: S.body,
+              color: S.text,
+              fontSize: 'clamp(16px,3.5vw,20px)',
+              lineHeight: 1.75,
+              margin: '0 0 clamp(16px,4vw,24px)',
+              fontWeight: 400,
+            }}>
+              Accra Creatives Hub was born from a simple observation: Ghana&apos;s creative talent is world-class, but the infrastructure to connect that talent with serious, paying clients was missing.
+            </p>
+            <p style={{
+              fontFamily: S.body,
+              color: S.textMuted,
+              fontSize: 'clamp(14px,3vw,16px)',
+              lineHeight: 1.85,
+              margin: 0,
+            }}>
+              Designers were chasing work through Instagram DMs — underpaid, undervalued, and without guarantees. Clients were hiring blindly, with no vetting and no protection.
+            </p>
           </div>
-          <div>
-            <Lbl style={{ marginBottom: 12, color: S.gold }}>Our Vision</Lbl>
-            <Hl style={{ fontSize: 22, fontWeight: 300, marginBottom: 16, lineHeight: 1.3 }}>
-              The creative economy, built in Africa.
-            </Hl>
-            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
-              We envision a future where Ghanaian designers are the first choice for brands across
-              Africa and beyond — not the affordable option, but the preferred one. A creative
-              economy that generates real wealth for real talent.
-            </Body>
-          </div>
-        </div>
 
-        <Divider />
-
-        {/* Values */}
-        <div style={{ margin: '48px 0' }}>
-          <Lbl style={{ marginBottom: 12 }}>What We Stand For</Lbl>
-          <Hl style={{ fontSize: isMobile ? 26 : 36, fontWeight: 300, marginBottom: 32 }}>
-            Our Values
-          </Hl>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)',
-              gap: 1,
-              background: S.borderFaint,
-            }}
-          >
-            {values.map((v) => (
-              <div key={v.title} style={{ background: S.bgLow, padding: '28px 24px' }}>
-                <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{v.icon}</div>
-                <Hl style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>{v.title}</Hl>
-                <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{v.body}</Body>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Divider />
-
-        {/* Stats */}
-        <div style={{ margin: '48px 0' }}>
-          <Lbl style={{ marginBottom: 24 }}>By the Numbers</Lbl>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)',
-              gap: 1,
-              background: S.borderFaint,
-            }}
-          >
-            {[
-              { n: '10%',   l: 'Commission Only'      },
-              { n: 'GH₵0',  l: 'Cost to List'         },
-              { n: '100%',  l: 'Editorial Review'      },
-              { n: '7 days', l: 'Auto Escrow Release'  },
-            ].map((s) => (
-              <div key={s.l} style={{ background: S.surface, padding: '28px 20px', textAlign: 'center' }}>
-                <Hl style={{ color: S.gold, fontSize: 28, fontWeight: 300, lineHeight: 1 }}>{s.n}</Hl>
-                <Lbl style={{ margin: 0, marginTop: 8, fontSize: 9 }}>{s.l}</Lbl>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div
-          style={{
+          <div style={{
             background: S.surface,
-            border: `1px solid ${S.border}`,
-            padding: isMobile ? '28px 20px' : '44px 48px',
-            textAlign: 'center',
-            marginTop: 48,
-          }}
-        >
-          <GoldLine w="32px" />
-          <Hl style={{ fontSize: isMobile ? 24 : 32, fontWeight: 300, marginBottom: 16, lineHeight: 1.2 }}>
-            Join Ghana's most curated<br />
-            <em style={{ fontStyle: 'italic', color: S.gold }}>design community.</em>
-          </Hl>
-          <Body style={{ fontSize: 14, marginBottom: 28, maxWidth: 420, margin: '0 auto 28px' }}>
-            Whether you're a designer ready to grow or a brand looking for elite craft — your place is here.
-          </Body>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Btn variant="gold"    size="lg" onClick={onSignup}>Apply as Designer →</Btn>
-            <Btn variant="outline" size="lg" onClick={onContact}>Get in Touch</Btn>
+            border: `1px solid ${S.borderFaint}`,
+            borderLeft: `3px solid ${S.gold}`,
+            padding: 'clamp(24px,5vw,36px)',
+            borderRadius: S.radiusSm,
+          }}>
+            <Lbl style={{ marginBottom: 16, color: S.gold }}>We built the bridge.</Lbl>
+            <p style={{
+              fontFamily: S.body,
+              color: S.textMuted,
+              fontSize: 'clamp(13px,3vw,15px)',
+              lineHeight: 1.85,
+              margin: 0,
+            }}>
+              A curated, verified, and escrow-protected marketplace where Ghana&apos;s best creative talent — graphic designers, UI/UX designers, and motion artists — meets clients who understand the value of real craft.
+            </p>
           </div>
         </div>
 
-        <div style={{ marginTop: 32, textAlign: 'center' }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none', border: `1px solid ${S.borderFaint}`, color: S.textMuted,
-              fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em',
-              textTransform: 'uppercase', padding: '10px 24px', cursor: 'pointer', borderRadius: 8,
-            }}
-          >
-            ← Back to Home
-          </button>
+        <Divider />
+
+        {/* ── MISSION ── */}
+        <div style={{ padding: 'clamp(40px,7vw,72px) 0' }}>
+          <Lbl style={{ marginBottom: 16 }}>Our Mission</Lbl>
+          <h2 style={{
+            fontFamily: S.headline,
+            fontWeight: 300,
+            color: S.text,
+            fontSize: 'clamp(24px,5vw,40px)',
+            lineHeight: 1.2,
+            margin: '0 0 clamp(16px,4vw,24px)',
+          }}>
+            Elevating Ghanaian talent<br />
+            <em style={{ color: S.gold, fontStyle: 'italic' }}>to a global stage.</em>
+          </h2>
+          <GoldLine />
+          <p style={{
+            fontFamily: S.body,
+            color: S.textMuted,
+            fontSize: 'clamp(14px,3vw,17px)',
+            lineHeight: 1.85,
+            maxWidth: 600,
+            margin: '0 0 clamp(24px,5vw,36px)',
+          }}>
+            We curate, verify, and champion Ghana&apos;s most talented creatives — connecting them with clients who understand the value of real craft.
+          </p>
+
+          {/* Two mission truths */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: 1,
+            background: S.borderFaint,
+            borderRadius: S.radiusSm,
+            overflow: 'hidden',
+          }}>
+            {[
+              { icon: '◈', statement: 'Every creative on our platform is reviewed by our editorial board.' },
+              { icon: '◉', statement: 'Every transaction is secured through escrow.' },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: S.bgLow,
+                padding: 'clamp(24px,5vw,36px)',
+                display: 'flex', gap: 16, alignItems: 'flex-start',
+              }}>
+                <span style={{ color: S.gold, fontSize: 24, flexShrink: 0, marginTop: 2 }}>{item.icon}</span>
+                <p style={{
+                  fontFamily: S.body,
+                  color: S.text,
+                  fontSize: 'clamp(14px,3vw,17px)',
+                  lineHeight: 1.65,
+                  margin: 0,
+                  fontWeight: 500,
+                }}>
+                  {item.statement}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <Divider />
+
+        {/* ── FOUR PILLARS ── */}
+        <div style={{ padding: 'clamp(40px,7vw,72px) 0' }}>
+          <Lbl style={{ marginBottom: 16 }}>How We Work</Lbl>
+          <h2 style={{
+            fontFamily: S.headline, fontWeight: 300, color: S.text,
+            fontSize: 'clamp(22px,5vw,36px)',
+            margin: '0 0 clamp(28px,5vw,48px)',
+          }}>
+            Built on four principles.
+          </h2>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+            gap: 1,
+            background: S.borderFaint,
+            borderRadius: S.radiusSm,
+            overflow: 'hidden',
+          }}>
+            {PILLARS.map((p, i) => (
+              <div key={i} style={{
+                background: S.bgLow,
+                padding: 'clamp(20px,4vw,30px) clamp(16px,3vw,24px)',
+              }}>
+                <div style={{ color: S.gold, fontSize: 'clamp(22px,5vw,28px)', marginBottom: 12 }}>{p.icon}</div>
+                <div style={{
+                  fontFamily: S.headline, color: S.text,
+                  fontSize: 'clamp(14px,3vw,16px)',
+                  fontWeight: 600, marginBottom: 10,
+                }}>
+                  {p.title}
+                </div>
+                <p style={{
+                  fontFamily: S.body, color: S.textMuted,
+                  fontSize: 'clamp(11px,2.5vw,13px)',
+                  lineHeight: 1.75, margin: 0,
+                }}>
+                  {p.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Divider />
+
+        {/* ── VISION ── */}
+        <div style={{
+          padding: 'clamp(40px,7vw,72px) 0',
+          textAlign: 'center',
+        }}>
+          <Lbl style={{ marginBottom: 16, textAlign: 'center' }}>Our Vision</Lbl>
+          <h2 style={{
+            fontFamily: S.headline, fontWeight: 300,
+            color: S.text,
+            fontSize: 'clamp(24px,6vw,48px)',
+            lineHeight: 1.15,
+            margin: '0 0 clamp(16px,4vw,24px)',
+          }}>
+            The creative economy,<br />
+            <em style={{ color: S.gold, fontStyle: 'italic' }}>built in Africa.</em>
+          </h2>
+          <GoldLine w="60px" />
+
+          <p style={{
+            fontFamily: S.body, color: S.textMuted,
+            fontSize: 'clamp(15px,3.5vw,18px)',
+            lineHeight: 1.9,
+            maxWidth: 580, margin: '0 auto clamp(16px,3vw,24px)',
+          }}>
+            We envision a future where Ghanaian creatives are the first choice for brands across Africa and beyond — not the affordable option, but the <strong style={{ color: S.text }}>preferred one</strong>.
+          </p>
+
+          <p style={{
+            fontFamily: S.headline,
+            color: S.gold,
+            fontSize: 'clamp(14px,3.5vw,18px)',
+            lineHeight: 1.6,
+            maxWidth: 500,
+            margin: '0 auto',
+            fontStyle: 'italic',
+            fontWeight: 300,
+          }}>
+            &ldquo;A creative economy that generates real wealth for real talent.&rdquo;
+          </p>
+        </div>
+
+        <Divider />
+
+        {/* ── STATS ── */}
+        <div style={{ padding: 'clamp(40px,6vw,60px) 0' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`,
+            gap: 1,
+            background: S.borderFaint,
+            borderRadius: S.radiusSm,
+            overflow: 'hidden',
+          }}>
+            {STATS.map(s => (
+              <div key={s.label} style={{
+                background: S.surface,
+                padding: 'clamp(20px,4vw,28px)',
+                textAlign: 'center',
+              }}>
+                <div style={{
+                  fontFamily: S.headline, color: S.gold,
+                  fontSize: 'clamp(22px,5vw,32px)',
+                  fontWeight: 300, lineHeight: 1,
+                  marginBottom: 8,
+                }}>
+                  {s.value}
+                </div>
+                <Lbl style={{ marginBottom: 4, textAlign: 'center', fontSize: 9 }}>{s.label}</Lbl>
+                <p style={{ fontFamily: S.body, color: S.textFaint, fontSize: 11, margin: 0 }}>{s.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CTA ── */}
+        <div style={{
+          textAlign: 'center',
+          padding: 'clamp(32px,6vw,56px) clamp(20px,5vw,40px)',
+          background: S.surface,
+          border: `1px solid ${S.borderFaint}`,
+          borderRadius: S.radiusLg,
+        }}>
+          <Lbl style={{ marginBottom: 16, textAlign: 'center' }}>Join the Movement</Lbl>
+          <h2 style={{
+            fontFamily: S.headline, fontWeight: 300, color: S.text,
+            fontSize: 'clamp(20px,5vw,32px)',
+            margin: '0 0 clamp(12px,3vw,16px)',
+          }}>
+            Ready to be part of this?
+          </h2>
+          <p style={{
+            fontFamily: S.body, color: S.textMuted,
+            fontSize: 'clamp(13px,3vw,15px)',
+            lineHeight: 1.8, margin: '0 0 clamp(24px,5vw,32px)',
+            maxWidth: 400, marginLeft: 'auto', marginRight: 'auto',
+          }}>
+            Apply to join as a verified designer or hire from Ghana&apos;s most curated creative talent.
+          </p>
+          <div style={{
+            display: 'flex', gap: 12, justifyContent: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+          }}>
+            <Btn variant="gold" size="lg" onClick={onSignup}>Apply as a Designer →</Btn>
+            <Btn variant="ghost" size="lg" onClick={onContact}>Get in Touch</Btn>
+          </div>
+        </div>
+
       </div>
     </div>
   )
