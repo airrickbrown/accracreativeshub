@@ -2,6 +2,9 @@
 // Categories MUST match constants.ts EXACTLY:
 // 'Logo Design' | 'Business Branding' | 'Flyer Design' |
 // 'Social Media Design' | 'UI/UX Design' | 'Motion Graphics'
+//
+// Order counts and earnings are tuned to be realistic for a curated
+// early-stage marketplace — not Fiverr-scale numbers.
 
 export const DESIGNERS = [
   {
@@ -9,13 +12,12 @@ export const DESIGNERS = [
     name: "Abena Kyei",
     avatar: "AK",
     color: "#1a2a1a",
-    // ── was: "Logo Design" — already correct ──
     category: "Logo Design",
     tagline: "Brand identities that outlast trends",
     location: "Accra, East Legon",
     rating: 4.9,
-    reviews: 134,
-    orders: 210,
+    reviews: 47,
+    orders: 62,
     price: 150,
     responseTime: "< 2 hours",
     tags: ["Minimalist", "Corporate", "Luxury"],
@@ -30,7 +32,7 @@ export const DESIGNERS = [
     ],
     earnings: 12400,
     views: 890,
-    referralCode: "ABENA20",
+    referralCode: "ACH-AK-1001",
     referrals: 8,
   },
   {
@@ -38,13 +40,12 @@ export const DESIGNERS = [
     name: "Kwesi Mensah",
     avatar: "KM",
     color: "#1a1a2a",
-    // ── was: "Flyer & Social Media" — FIXED to match constant ──
     category: "Flyer Design",
     tagline: "Designs that stop the scroll",
     location: "Kumasi, Adum",
     rating: 4.8,
-    reviews: 89,
-    orders: 312,
+    reviews: 31,
+    orders: 44,
     price: 30,
     responseTime: "< 1 hour",
     tags: ["Events", "Church", "Music"],
@@ -59,7 +60,7 @@ export const DESIGNERS = [
     ],
     earnings: 6800,
     views: 1240,
-    referralCode: "KWESI20",
+    referralCode: "ACH-KM-1002",
     referrals: 14,
   },
   {
@@ -67,13 +68,12 @@ export const DESIGNERS = [
     name: "Efua Asante",
     avatar: "EA",
     color: "#2a1a2a",
-    // ── was: "Business Branding" — already correct ──
     category: "Business Branding",
     tagline: "Complete brand systems for serious businesses",
     location: "Accra, Airport Res.",
     rating: 5.0,
-    reviews: 67,
-    orders: 89,
+    reviews: 19,
+    orders: 24,
     price: 800,
     responseTime: "< 4 hours",
     tags: ["Startups", "FMCG", "Hospitality"],
@@ -88,7 +88,7 @@ export const DESIGNERS = [
     ],
     earnings: 48000,
     views: 620,
-    referralCode: "EFUA20",
+    referralCode: "ACH-EA-1003",
     referrals: 5,
   },
   {
@@ -96,13 +96,12 @@ export const DESIGNERS = [
     name: "Kofi Darkwa",
     avatar: "KD",
     color: "#0a1a0a",
-    // ── was: "Logo Design" — already correct ──
     category: "Logo Design",
     tagline: "Symbols with meaning, marks with power",
     location: "Takoradi",
     rating: 4.7,
-    reviews: 52,
-    orders: 143,
+    reviews: 22,
+    orders: 31,
     price: 200,
     responseTime: "< 3 hours",
     tags: ["Traditional", "Modern", "Tech"],
@@ -117,7 +116,7 @@ export const DESIGNERS = [
     ],
     earnings: 9200,
     views: 410,
-    referralCode: "KOFI20",
+    referralCode: "ACH-KD-1004",
     referrals: 3,
   },
   {
@@ -125,13 +124,12 @@ export const DESIGNERS = [
     name: "Ama Boateng",
     avatar: "AB",
     color: "#2a1a0a",
-    // ── was: "Flyer & Social Media" — FIXED to Social Media Design ──
     category: "Social Media Design",
     tagline: "Bold visuals for bold Ghanaian brands",
     location: "Accra, Tema",
     rating: 4.9,
-    reviews: 201,
-    orders: 445,
+    reviews: 58,
+    orders: 79,
     price: 45,
     responseTime: "< 30 mins",
     tags: ["Fast", "Affordable", "Creative"],
@@ -146,7 +144,7 @@ export const DESIGNERS = [
     ],
     earnings: 14200,
     views: 1890,
-    referralCode: "AMA20",
+    referralCode: "ACH-AB-1005",
     referrals: 22,
   },
   {
@@ -154,13 +152,12 @@ export const DESIGNERS = [
     name: "Yaw Owusu",
     avatar: "YO",
     color: "#0a0a2a",
-    // ── was: "Business Branding" — changed to UI/UX to cover that category ──
     category: "UI/UX Design",
     tagline: "Interfaces that feel natural, look stunning",
     location: "Accra, Osu",
     rating: 4.8,
-    reviews: 43,
-    orders: 61,
+    reviews: 12,
+    orders: 18,
     price: 600,
     responseTime: "< 6 hours",
     tags: ["Apps", "Web", "Product Design"],
@@ -175,10 +172,9 @@ export const DESIGNERS = [
     ],
     earnings: 0,
     views: 280,
-    referralCode: "YAW20",
+    referralCode: "ACH-YO-1006",
     referrals: 0,
   },
-  // ── NEW: Motion Graphics designer ──
   {
     id: 7,
     name: "Nana Adjei",
@@ -188,8 +184,8 @@ export const DESIGNERS = [
     tagline: "Movement that tells the African story",
     location: "Accra, Cantonments",
     rating: 4.8,
-    reviews: 38,
-    orders: 54,
+    reviews: 14,
+    orders: 19,
     price: 400,
     responseTime: "< 4 hours",
     tags: ["Animation", "Video", "Brand Motion"],
@@ -204,10 +200,9 @@ export const DESIGNERS = [
     ],
     earnings: 8800,
     views: 520,
-    referralCode: "NANA20",
+    referralCode: "ACH-NA-1007",
     referrals: 6,
   },
-  // ── NEW: Business Branding (to replace Yaw who moved to UI/UX) ──
   {
     id: 8,
     name: "Akosua Frimpong",
@@ -217,8 +212,8 @@ export const DESIGNERS = [
     tagline: "Strategy-driven branding for growing Ghanaian businesses",
     location: "Accra, Labone",
     rating: 4.9,
-    reviews: 29,
-    orders: 41,
+    reviews: 11,
+    orders: 15,
     price: 500,
     responseTime: "< 5 hours",
     tags: ["Strategy", "Corporate", "Growth"],
@@ -233,7 +228,7 @@ export const DESIGNERS = [
     ],
     earnings: 7200,
     views: 340,
-    referralCode: "AKOS20",
+    referralCode: "ACH-AF-1008",
     referrals: 4,
   },
 ]
@@ -293,14 +288,14 @@ export const MESSAGES_DATA: Record<number, any[]> = {
   302: [
     { from: "client",   text: "Hi Ama, we need a flyer for our 20th anniversary this Sunday.", time: "Yesterday" },
     { from: "designer", text: "On it! Here is the first draft:", time: "Yesterday", file: { name: "Anniversary_v1.jpg", size: "1.8 MB", type: "IMG" } },
-    { from: "system",   text: "Project delivered · Awaiting client approval · Funds in escrow" },
+    { from: "system",   text: "Project delivered · Awaiting client approval · Payment held securely" },
   ],
 }
 
 export const PENDING_APPS = [
-  { id: 101, name: "Kwame Asare",    avatar: "KA", color: "#1a1a2a", category: "Logo Design",         appliedAt: "2 hours ago", portfolioCount: 6, idVerified: true,  phone: "+233 24 123 4567" },
-  { id: 102, name: "Adwoa Frimpong", avatar: "AF", color: "#1a2a1a", category: "Flyer Design",         appliedAt: "5 hours ago", portfolioCount: 8, idVerified: true,  phone: "+233 55 987 6543" },
-  { id: 103, name: "Fiifi Mensah",   avatar: "FM", color: "#2a1a1a", category: "Business Branding",    appliedAt: "1 day ago",   portfolioCount: 4, idVerified: false, phone: "+233 20 456 7890" },
+  { id: 101, name: "Kwame Asare",    avatar: "KA", color: "#1a1a2a", category: "Logo Design",      appliedAt: "2 hours ago", portfolioCount: 6, idVerified: true,  phone: "+233 24 123 4567" },
+  { id: 102, name: "Adwoa Frimpong", avatar: "AF", color: "#1a2a1a", category: "Flyer Design",      appliedAt: "5 hours ago", portfolioCount: 8, idVerified: true,  phone: "+233 55 987 6543" },
+  { id: 103, name: "Fiifi Mensah",   avatar: "FM", color: "#2a1a1a", category: "Business Branding", appliedAt: "1 day ago",   portfolioCount: 4, idVerified: false, phone: "+233 20 456 7890" },
 ]
 
 export const DISPUTES_DATA = [

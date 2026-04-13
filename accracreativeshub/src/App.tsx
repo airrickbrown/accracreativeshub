@@ -390,6 +390,23 @@ export default function App() {
         </div>
       </section>
 
+      {/* ── Trust strip ── */}
+      <div style={{ background: S.bgLow, borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}`, padding: '14px 40px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
+          {[
+            { icon: '◆', text: COPY.trust.editorial   },
+            { icon: '◆', text: COPY.trust.payment      },
+            { icon: '◆', text: COPY.trust.curated      },
+            { icon: '◆', text: COPY.trust.independent  },
+          ].map(t => (
+            <div key={t.text} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ color: S.gold, fontSize: 6 }}>{t.icon}</span>
+              <span style={{ color: S.textMuted, fontSize: 11, fontFamily: S.body, letterSpacing: '0.02em' }}>{t.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Marketplace ── */}
       <section id="marketplace" style={{ padding: '96px 40px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -451,30 +468,29 @@ export default function App() {
       {/* ── How It Works ── */}
       <section id="how-it-works" style={{ background: S.surface, padding: '96px 40px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', marginBottom: 64 }}>
-          <Hl style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 300 }}>The Process of Craft</Hl>
+          <Hl style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 300 }}>{COPY.process.heading}</Hl>
           <GoldLine w="40px" />
-          <Body style={{ fontSize: 14, maxWidth: 500, margin: '0 auto' }}>From brief to final delivery — every step is secure, transparent, and built for Ghana.</Body>
+          <Body style={{ fontSize: 14, maxWidth: 500, margin: '0 auto' }}>{COPY.process.sub}</Body>
         </div>
         <div className="process-grid" style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
-          {[
-            { n: '01', i: '▣', t: 'Build Your Brief',     d: 'Fill out our structured brief form — project type, colours, references, and budget.', action: () => scrollTo('marketplace') },
-            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held securely and only released when you approve.', action: null },
-            { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.', action: null },
-          ].map((s, i) => (
-            <div key={i} onClick={s.action || undefined}
-              style={{ background: 'transparent', padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: s.action ? 'pointer' : 'default', transition: 'background 0.2s' }}
-              onMouseEnter={(e: any) => { if (s.action) e.currentTarget.style.background = S.surface }}
-              onMouseLeave={(e: any) => { if (s.action) e.currentTarget.style.background = 'transparent' }}
-            >
-              <div style={{ position: 'relative' }}>
-                <div style={{ color: S.gold, fontSize: 28, marginBottom: 12 }}>{s.i}</div>
-                <Lbl style={{ marginBottom: 8, color: S.gold }}>{s.n}</Lbl>
-                <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 14 }}>{s.t}</Hl>
-                <Body style={{ fontSize: 12, lineHeight: 1.8 }}>{s.d}</Body>
-                {s.action && <div style={{ marginTop: 16 }}><Btn variant="outline" size="sm" onClick={s.action}>Get Started →</Btn></div>}
+          {COPY.process.steps.map((s, i) => {
+            const action = i === 0 ? () => scrollTo('marketplace') : null
+            return (
+              <div key={i} onClick={action || undefined}
+                style={{ background: 'transparent', padding: '42px 28px', position: 'relative', overflow: 'hidden', textAlign: 'center', cursor: action ? 'pointer' : 'default', transition: 'background 0.2s' }}
+                onMouseEnter={(e: any) => { if (action) e.currentTarget.style.background = S.surface }}
+                onMouseLeave={(e: any) => { if (action) e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ position: 'relative' }}>
+                  <div style={{ color: S.gold, fontSize: 28, marginBottom: 12 }}>{s.icon}</div>
+                  <Lbl style={{ marginBottom: 8, color: S.gold }}>{s.n}</Lbl>
+                  <Hl style={{ fontSize: 22, fontWeight: 400, marginBottom: 14 }}>{s.title}</Hl>
+                  <Body style={{ fontSize: 12, lineHeight: 1.8 }}>{s.body}</Body>
+                  {action && <div style={{ marginTop: 16 }}><Btn variant="outline" size="sm" onClick={action}>Get Started →</Btn></div>}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
@@ -484,30 +500,25 @@ export default function App() {
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div className="for-designers-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
               <div>
-                <Lbl style={{ marginBottom: 16 }}>For Ghanaian Creatives</Lbl>
+                <Lbl style={{ marginBottom: 16 }}>{COPY.forDesigners.eyebrow}</Lbl>
                 <Hl style={{ fontSize: 'clamp(28px,4vw,48px)', fontWeight: 300, marginBottom: 16, lineHeight: 1.1 }}>
-                  Your talent deserves<br /><em style={{ fontStyle: 'italic', color: S.gold }}>better exposure.</em>
+                  {COPY.forDesigners.heading1}<br /><em style={{ fontStyle: 'italic', color: S.gold }}>{COPY.forDesigners.heading2}</em>
                 </Hl>
                 <GoldLine />
                 <Body style={{ fontSize: 14, marginBottom: 32, lineHeight: 1.9 }}>
-                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through our platform.
+                  {COPY.forDesigners.body}
                 </Body>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <Btn variant="gold" size="lg" onClick={openDesignerFlow}>Apply to Join →</Btn>
+                  <Btn variant="gold" size="lg" onClick={openDesignerFlow}>{COPY.forDesigners.cta}</Btn>
                   {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>}
                 </div>
               </div>
               <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
-                {[
-                  { i: '◈', t: 'Free to List',     d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
-                  { i: '◉', t: 'Verified Badge',    d: 'Our editorial board reviews and approves every designer before they go live.'            },
-                  { i: '◐', t: 'Payment Protected',  d: 'Funds are held securely by Paystack. You always get paid for work that is approved.'    },
-                  { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.'                  },
-                ].map((card, i) => (
+                {COPY.forDesigners.cards.map((card, i) => (
                   <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
-                    <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{card.i}</div>
-                    <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{card.t}</Hl>
-                    <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{card.d}</Body>
+                    <div style={{ color: S.gold, fontSize: 24, marginBottom: 12 }}>{card.icon}</div>
+                    <Hl style={{ fontSize: 17, fontWeight: 400, marginBottom: 8 }}>{card.title}</Hl>
+                    <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{card.body}</Body>
                   </div>
                 ))}
               </div>
@@ -525,7 +536,8 @@ export default function App() {
                 <img src="/logo.png" alt="" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
-              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana's first curated marketplace for verified graphic designers. Payment protected. Real reviews.</Body>
+              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 8 }}>{COPY.footer.tagline}</Body>
+              <Body style={{ fontSize: 11, maxWidth: 280, lineHeight: 1.7, marginBottom: 20, color: S.textMuted }}>{COPY.footer.tagline_sub}</Body>
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {[{ v: REAL_STATS.designerCount, l: 'Designers' }, { v: REAL_STATS.totalOrders, l: 'Orders' }, { v: `${REAL_STATS.avgRating}★`, l: 'Avg Rating' }].map(s => (
                   <div key={s.l}>
