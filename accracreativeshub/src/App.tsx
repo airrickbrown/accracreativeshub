@@ -371,7 +371,7 @@ export default function App() {
       <section style={{ background: S.surface, padding: '32px 40px', borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}` }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
-            <img src="/logo.png" alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+            <img src="/logo.svg" alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             <Lbl style={{ margin: 0, color: S.gold }}>Platform Overview</Lbl>
           </div>
           <div className="platform-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: S.borderFaint }}>
