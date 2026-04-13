@@ -320,7 +320,7 @@ export default function App() {
 
       {/* ── Hero ── */}
       <section id="hero" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 80, position: 'relative', overflow: 'hidden' }}>
-        <img src="/logo.png" alt="" style={{ position: 'absolute', right: '6%', top: '50%', transform: 'translateY(-50%)', width: 340, maxWidth: '42vw', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
+        <img src="/logo.svg" alt="" style={{ position: 'absolute', right: '6%', top: '50%', transform: 'translateY(-50%)', width: 340, maxWidth: '42vw', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
         <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
           <div style={{ animation: heroIn ? 'fadeUp 0.8s ease forwards' : 'none', opacity: heroIn ? 1 : 0 }}>
             <Lbl style={{ marginBottom: 20 }}>The Sovereign Gallery</Lbl>
@@ -533,7 +533,7 @@ export default function App() {
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <img src="/logo.png" alt="" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
+                <img src="/logo.svg" alt="" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
               <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 8 }}>{COPY.footer.tagline}</Body>
