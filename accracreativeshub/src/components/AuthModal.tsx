@@ -107,12 +107,15 @@ export default function AuthModal({
     email: '', password: '', fullName: '',
     role: lockRole ?? defaultRole ?? 'client',
   })
+  const [consentTerms, setConsentTerms]         = useState(false)
+  const [consentDesigner, setConsentDesigner]   = useState(false)
 
   const f = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }))
 
   useEffect(() => {
     setForm({ email: '', password: '', fullName: '', role: lockRole ?? defaultRole ?? 'client' })
     setError(''); setSuccess(''); setShowPw(false); setPending('')
+    setConsentTerms(false); setConsentDesigner(false)
   }, [tab])
 
   const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim())
@@ -146,6 +149,10 @@ export default function AuthModal({
     if (!form.fullName.trim())     { setError('Please enter your full name.'); return }
     if (!isValidEmail(form.email)) { setError('Please enter a valid email.'); return }
     if (form.password.length < 8)  { setError('Password must be at least 8 characters.'); return }
+    if (!consentTerms)             { setError('Please agree to the Terms of Service and Privacy Policy to continue.'); return }
+    if ((form.role === 'designer' || lockRole === 'designer') && !consentDesigner) {
+      setError('Please agree to the Designer Agreement to continue.'); return
+    }
     const rl = checkRateLimit('signup')
     if (!rl.allowed) { setError(`Too many signups. Wait ${formatRetryTime(rl.retryAfterMs!)}.`); return }
     setLoading(true); setError(''); setSuccess('')
@@ -331,6 +338,46 @@ export default function AuthModal({
             )}
             {error   && <Banner type="error">{error}</Banner>}
             {success && <Banner type="success">{success}</Banner>}
+
+            {/* Consent checkboxes — signup only */}
+            {isSignup && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={consentTerms}
+                    onChange={e => setConsentTerms(e.target.checked)}
+                    style={{ marginTop: 3, accentColor: '#c9a84c', flexShrink: 0 }}
+                  />
+                  <span style={{ fontFamily: S.body, fontSize: 12, color: S.textMuted, lineHeight: 1.6 }}>
+                    I agree to the{' '}
+                    <a href="https://accracreativeshub.com/terms" target="_blank" rel="noopener noreferrer"
+                      style={{ color: S.gold, textDecoration: 'underline' }}>Terms of Service</a>
+                    {' '}and acknowledge the{' '}
+                    <a href="https://accracreativeshub.com/privacy" target="_blank" rel="noopener noreferrer"
+                      style={{ color: S.gold, textDecoration: 'underline' }}>Privacy Policy</a>
+                    . <span style={{ color: S.danger }}>*</span>
+                  </span>
+                </label>
+                {(form.role === 'designer' || lockRole === 'designer') && (
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={consentDesigner}
+                      onChange={e => setConsentDesigner(e.target.checked)}
+                      style={{ marginTop: 3, accentColor: '#c9a84c', flexShrink: 0 }}
+                    />
+                    <span style={{ fontFamily: S.body, fontSize: 12, color: S.textMuted, lineHeight: 1.6 }}>
+                      I have read and agree to the{' '}
+                      <a href="https://accracreativeshub.com/designer-agreement" target="_blank" rel="noopener noreferrer"
+                        style={{ color: S.gold, textDecoration: 'underline' }}>Designer Agreement</a>
+                      , including commission terms and independent contractor status.{' '}
+                      <span style={{ color: S.danger }}>*</span>
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
 
             {/* CTA */}
             <button

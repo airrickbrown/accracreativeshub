@@ -49,7 +49,9 @@ const Clause = ({
   </div>
 )
 
-export default function PrivacyPage() {
+interface Props { onClose?: () => void }
+
+export default function PrivacyPage({ onClose }: Props = {}) {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -67,16 +69,21 @@ export default function PrivacyPage() {
   })
 
   const goHome = () => {
+    if (onClose) { onClose(); return }
     window.location.href = '/'
   }
 
   return (
     <div
       style={{
+        position: onClose ? 'fixed' : undefined,
+        inset: onClose ? 0 : undefined,
+        zIndex: onClose ? 210 : undefined,
         minHeight: '100vh',
         background: S.bgDeep,
         color: S.text,
         overflowX: 'hidden',
+        overflowY: onClose ? 'auto' : undefined,
       }}
     >
       <Nav
@@ -162,7 +169,7 @@ export default function PrivacyPage() {
           <Clause n="2.1" title="To provide the Platform">
             <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
               We use your information to create and manage accounts, process
-              transactions, hold payments in escrow, enable messaging between Clients and
+              transactions, manage payment flows, enable messaging between Clients and
               Designers, facilitate project delivery, and provide customer support.
             </Body>
           </Clause>

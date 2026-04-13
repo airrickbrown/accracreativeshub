@@ -94,7 +94,7 @@ export default function TermsPage({ onClose }: TermsPageProps) {
             ['"Client"', 'Any registered user who engages a Designer through the Platform to obtain design services.'],
             ['"Designer"', 'Any verified creative professional who has been approved by our editorial board and lists services on the Platform.'],
             ['"Project"', 'Any agreed engagement between a Client and Designer facilitated through the Platform.'],
-            ['"Escrow"', 'The secure holding of funds by the Platform pending successful delivery and approval of a Project.'],
+            ['"Payment Hold"', 'The platform-managed process by which funds paid by a Client are held pending successful delivery and approval of a Project, facilitated through Paystack and released according to these Terms.'],
             ['"Commission"', 'The Platform\'s fee (currently 10%) deducted from each completed transaction.'],
             ['"GH₵"', 'Ghana Cedis — the currency used for all transactions on the Platform.'],
           ].map(([term, def]) => (
@@ -140,12 +140,15 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               store credit card details. All transactions are denominated in Ghana Cedis (GH₵).
             </Body>
           </Clause>
-          <Clause n="3.2" title="Escrow System">
+          <Clause n="3.2" title="Payment Protection Workflow">
             <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
-              Upon project initiation, the agreed Project fee is held in escrow by the Platform. Funds are
-              only released to the Designer upon the Client's explicit written approval of the final
-              deliverable, or automatically after 7 days if no dispute has been raised following delivery
-              notification.
+              Upon project initiation, the agreed Project fee is processed by Paystack and held through
+              the Platform's payment workflow pending delivery and approval. Funds are released to the
+              Designer only upon the Client's explicit written approval of the final deliverable, or
+              automatically after 7 days if no dispute has been raised following delivery notification.
+              The Platform is not a licensed deposit-taking institution or regulated escrow agent; funds
+              are managed operationally by the Platform in accordance with these Terms and Paystack's
+              payment services.
             </Body>
           </Clause>
           <Clause n="3.3" title="Platform Commission">
@@ -227,8 +230,8 @@ export default function TermsPage({ onClose }: TermsPageProps) {
             <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
               Upon receiving a dispute, the Platform will: (a) notify both parties within 24 hours;
               (b) review all submitted evidence within 5 business days; (c) issue a binding decision
-              within 10 business days. The Platform's decision regarding escrow release is final and
-              binding on both parties.
+              within 10 business days. The Platform's decision regarding payment release or refund is final
+              and binding on both parties, subject to any rights available under Ghanaian law.
             </Body>
           </Clause>
           <Clause n="5.3" title="Governing Law & Arbitration">
@@ -353,8 +356,9 @@ export default function TermsPage({ onClose }: TermsPageProps) {
           </Clause>
           <Clause n="10.2" title="Account Termination">
             <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
-              Either party may terminate an account at any time. Upon termination, any outstanding
-              escrow funds will be handled in accordance with the dispute resolution process. The Platform
+              Either party may terminate an account at any time. Upon termination, any funds held
+              through the Platform's payment workflow will be handled in accordance with the dispute
+              resolution process in Section 5. The Platform
               may terminate accounts immediately for serious violations of these Terms without prior notice.
             </Body>
           </Clause>

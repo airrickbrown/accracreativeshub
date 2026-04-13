@@ -22,6 +22,9 @@ import DesignerDashboard from './components/DesignerDashboard'
 import DesignerSignup from './components/DesignerSignup'
 import DesignerResume from './components/DesignerResume'
 import TermsPage from './components/TermsPage'
+import PrivacyPage from './components/PrivacyPage'
+import PaymentsDisputesPage from './components/PaymentsDisputesPage'
+import DesignerAgreementPage from './components/DesignerAgreementPage'
 import ContactPage from './components/ContactPage'
 import AboutPage from './components/AboutPage'
 import AdminRoute from './components/AdminRoute'
@@ -68,6 +71,9 @@ export default function App() {
   const [chatOrder, setChatOrder]               = useState<any>(null)
   const [showResume, setShowResume]             = useState<any>(null)
   const [showTerms, setShowTerms]               = useState(false)
+  const [showPrivacy, setShowPrivacy]           = useState(false)
+  const [showPayments, setShowPayments]         = useState(false)
+  const [showDesignerAgreement, setShowDesignerAgreement] = useState(false)
   const [showContact, setShowContact]           = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -109,8 +115,10 @@ export default function App() {
     setShowSignup(false);      setShowAdmin(false)
     setShowChat(false);        setShowAuth(false)
     setShowAnalytics(null);    setShowResume(null)
-    setShowTerms(false);       setShowContact(false)
-    setShowAbout(false);       setShowLogoutConfirm(false)
+    setShowTerms(false);       setShowPrivacy(false)
+    setShowPayments(false);    setShowDesignerAgreement(false)
+    setShowContact(false);     setShowAbout(false)
+    setShowLogoutConfirm(false)
     setShowWelcome(false);     setShowDesignerWelcome(false)
     setAuthConfig(DEFAULT_AUTH)
   }, [])
@@ -295,7 +303,10 @@ export default function App() {
           isAdmin={isAdmin}
         />
       )}
-      {showTerms   && <TermsPage   onClose={() => setShowTerms(false)} />}
+      {showTerms            && <TermsPage            onClose={() => setShowTerms(false)} />}
+      {showPrivacy          && <PrivacyPage          onClose={() => setShowPrivacy(false)} />}
+      {showPayments         && <PaymentsDisputesPage onClose={() => setShowPayments(false)} />}
+      {showDesignerAgreement && <DesignerAgreementPage onClose={() => setShowDesignerAgreement(false)} />}
       {showContact && <ContactPage onClose={() => setShowContact(false)} />}
       {showAbout   && (
         <AboutPage
@@ -447,7 +458,7 @@ export default function App() {
         <div className="process-grid" style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
           {[
             { n: '01', i: '▣', t: 'Build Your Brief',     d: 'Fill out our structured brief form — project type, colours, references, and budget.', action: () => scrollTo('marketplace') },
-            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held in escrow until you approve.', action: null },
+            { n: '02', i: '◈', t: 'Collaborate Securely', d: 'Chat directly with your designer. Funds are held securely and only released when you approve.', action: null },
             { n: '03', i: '◉', t: 'Approve & Pay',        d: 'When satisfied, approve the delivery. Funds are released instantly.', action: null },
           ].map((s, i) => (
             <div key={i} onClick={s.action || undefined}
@@ -479,7 +490,7 @@ export default function App() {
                 </Hl>
                 <GoldLine />
                 <Body style={{ fontSize: 14, marginBottom: 32, lineHeight: 1.9 }}>
-                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through escrow.
+                  Stop chasing clients through Instagram DMs. Build a verified profile, receive structured briefs, and get paid securely through our platform.
                 </Body>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <Btn variant="gold" size="lg" onClick={openDesignerFlow}>Apply to Join →</Btn>
@@ -490,7 +501,7 @@ export default function App() {
                 {[
                   { i: '◈', t: 'Free to List',     d: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
                   { i: '◉', t: 'Verified Badge',    d: 'Our editorial board reviews and approves every designer before they go live.'            },
-                  { i: '◐', t: 'Secure Escrow',     d: 'Funds are held safely. You always get paid for work that is approved.'                   },
+                  { i: '◐', t: 'Payment Protected',  d: 'Funds are held securely by Paystack. You always get paid for work that is approved.'    },
                   { i: '◑', t: 'Referral Earnings', d: 'Earn GH₵20 for every client you refer who completes their first order.'                  },
                 ].map((card, i) => (
                   <div key={i} style={{ background: S.surface, padding: '28px 22px' }}>
@@ -514,7 +525,7 @@ export default function App() {
                 <img src="/logo.png" alt="" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
-              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana's first curated marketplace for verified graphic designers. Secure escrow. Real reviews.</Body>
+              <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 20 }}>Ghana's first curated marketplace for verified graphic designers. Payment protected. Real reviews.</Body>
               <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                 {[{ v: REAL_STATS.designerCount, l: 'Designers' }, { v: REAL_STATS.totalOrders, l: 'Orders' }, { v: `${REAL_STATS.avgRating}★`, l: 'Avg Rating' }].map(s => (
                   <div key={s.l}>
@@ -558,10 +569,12 @@ export default function App() {
             <div>
               <Lbl style={{ marginBottom: 16 }}>Company</Lbl>
               {[
-                { label: 'About',          fn: () => openOverlay(() => setShowAbout(true))   },
-                { label: 'Contact Us',     fn: () => openOverlay(() => setShowContact(true)) },
-                { label: 'Terms',          fn: () => openOverlay(() => setShowTerms(true))   },
-                { label: 'Privacy Policy', fn: () => openOverlay(() => setShowTerms(true))   },
+                { label: 'About',                 fn: () => openOverlay(() => setShowAbout(true))             },
+                { label: 'Contact Us',            fn: () => openOverlay(() => setShowContact(true))           },
+                { label: 'Terms',                 fn: () => openOverlay(() => setShowTerms(true))             },
+                { label: 'Privacy Policy',        fn: () => openOverlay(() => setShowPrivacy(true))           },
+                { label: 'Payments & Disputes',   fn: () => openOverlay(() => setShowPayments(true))          },
+                { label: 'Designer Agreement',    fn: () => openOverlay(() => setShowDesignerAgreement(true)) },
               ].map(l => (
                 <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}
@@ -575,7 +588,8 @@ export default function App() {
             <Body style={{ fontSize: 11, margin: 0 }}>
               © {new Date().getFullYear()} Accra Creatives Hub · {REAL_STATS.commission}% commission
               {' · '}<span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Terms</span>
-              {' · '}<span onClick={() => openOverlay(() => setShowTerms(true))} style={{ color: S.gold, cursor: 'pointer' }}>Privacy</span>
+              {' · '}<span onClick={() => openOverlay(() => setShowPrivacy(true))} style={{ color: S.gold, cursor: 'pointer' }}>Privacy</span>
+              {' · '}<span onClick={() => openOverlay(() => setShowPayments(true))} style={{ color: S.gold, cursor: 'pointer' }}>Payments</span>
             </Body>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               {['Instagram', 'Twitter', 'LinkedIn', 'WhatsApp'].map(s => (
@@ -595,6 +609,9 @@ export default function App() {
           !showAbout &&
           !showContact &&
           !showTerms &&
+          !showPrivacy &&
+          !showPayments &&
+          !showDesignerAgreement &&
           !showSignup &&
           !showAdmin &&
           !selectedDesigner &&

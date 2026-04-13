@@ -497,9 +497,21 @@ export default function BriefBuilder({ designer, onClose, onOrderCreated }: Prop
                 <p style={{
                   fontFamily: S.body, color: S.textMuted,
                   fontSize: 'clamp(11px,2.5vw,13px)',
-                  margin: 0, lineHeight: 1.7,
+                  margin: '0 0 8px', lineHeight: 1.7,
                 }}>
-                  🔒 Your payment is held in <strong style={{ color: S.text }}>escrow</strong> until you approve the delivery. The designer will be notified immediately by email.
+                  🔒 Your payment is processed by <strong style={{ color: S.text }}>Paystack</strong> and held securely until you approve the delivery. The designer will be notified immediately by email.
+                </p>
+                <p style={{
+                  fontFamily: S.body, color: S.textFaint,
+                  fontSize: 'clamp(10px,2vw,11px)',
+                  margin: 0, lineHeight: 1.6,
+                }}>
+                  By submitting this brief you agree to our{' '}
+                  <a href="https://accracreativeshub.com/terms" target="_blank" rel="noopener noreferrer"
+                    style={{ color: S.gold, textDecoration: 'underline' }}>Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="https://accracreativeshub.com/payments-and-disputes" target="_blank" rel="noopener noreferrer"
+                    style={{ color: S.gold, textDecoration: 'underline' }}>Payments &amp; Disputes Policy</a>.
                 </p>
               </div>
             </div>

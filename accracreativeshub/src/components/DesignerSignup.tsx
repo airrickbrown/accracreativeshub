@@ -52,6 +52,8 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
   const portfolioInputRef = useRef<HTMLInputElement>(null)
   const idInputRef        = useRef<HTMLInputElement>(null)
 
+  const [designerAgreement, setDesignerAgreement] = useState(false)
+
   const [form, setForm] = useState({
     name: '', email: '', password: '', phone: '', location: '', category: '',
     tagline: '', bio: '', portfolioFiles: [] as File[], portfolioPreviews: [] as string[],
@@ -100,6 +102,7 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
   const handleFinalSubmit = async () => {
     const error = STEP_ERRORS[4]?.(form)
     if (error) { setStepError(error); return }
+    if (!designerAgreement) { setStepError('You must agree to the Designer Agreement before submitting.'); return }
 
     try {
       if (!form.idFile) { setStepError('Please upload your government-issued ID.'); return }
@@ -354,6 +357,27 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Designer Agreement consent — step 4 only */}
+          {step === 4 && (
+            <div style={{ background: S.bgLow, border: `1px solid ${designerAgreement ? 'rgba(74,154,74,0.35)' : S.borderFaint}`, borderRadius: S.radiusSm, padding: '14px 16px', marginTop: 6 }}>
+              <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={designerAgreement}
+                  onChange={e => setDesignerAgreement(e.target.checked)}
+                  style={{ marginTop: 2, flexShrink: 0, accentColor: S.gold, width: 14, height: 14 }}
+                />
+                <Body style={{ fontSize: 12, lineHeight: 1.7, margin: 0 }}>
+                  I have read and agree to the{' '}
+                  <a href="/designer-agreement" target="_blank" rel="noopener noreferrer" style={{ color: S.gold, textDecoration: 'underline' }}>Designer Agreement</a>,{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: S.gold, textDecoration: 'underline' }}>Terms of Service</a>, and{' '}
+                  <a href="/payments-disputes" target="_blank" rel="noopener noreferrer" style={{ color: S.gold, textDecoration: 'underline' }}>Payments & Disputes Policy</a>.
+                  I understand that I am an independent contractor and not an employee of Accra Creatives Hub.
+                </Body>
+              </label>
             </div>
           )}
 

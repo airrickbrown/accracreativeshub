@@ -39,8 +39,8 @@ export default function ClientWelcome({ onBrowse, onMessages }: Props) {
     },
     {
       icon:  '◉',
-      title: 'Pay securely via escrow',
-      body:  'Your payment is held safely until you approve the final delivery. You are always protected.',
+      title: 'Pay securely — always protected',
+      body:  'Your payment is processed by Paystack and held securely until you approve the final delivery. You are always protected.',
     },
   ]
 

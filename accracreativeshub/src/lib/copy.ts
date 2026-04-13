@@ -28,7 +28,7 @@ export const COPY = {
     heading:   'Elevating Ghanaian talent to a global stage.',
     body:      'We curate, verify, and champion Ghana\'s most talented creatives — connecting them with clients who understand the value of real craft.',
     truth1:    'Every creative on our platform is reviewed by our editorial board.',
-    truth2:    'Every transaction is secured through escrow.',
+    truth2:    'Every transaction is payment-protected through our platform workflow.',
   },
 
   // ── How It Works ─────────────────────────────────────────
@@ -44,7 +44,7 @@ export const COPY = {
       {
         n: '02', icon: '◈',
         title: 'Collaborate Securely',
-        body:  'Message directly with your creative. Your payment is held in escrow until you approve the delivery.',
+        body:  'Message directly with your creative. Your payment is held securely and only released when you approve the delivery.',
       },
       {
         n: '03', icon: '◉',
@@ -64,7 +64,7 @@ export const COPY = {
     cards: [
       { icon: '◈', title: 'Free to List',     body: 'Create your profile at no cost. We take 10% commission only when you complete an order.' },
       { icon: '◉', title: 'Verified Badge',   body: 'Our editorial board reviews every creative before they go live. Your badge means something.' },
-      { icon: '◐', title: 'Secure Escrow',    body: 'Funds are held safely until approval. You always get paid for work that is approved.'       },
+      { icon: '◐', title: 'Payment Protected', body: 'Funds are held through our platform workflow until the client approves. You always get paid for approved work.' },
       { icon: '◑', title: 'Real Visibility',  body: 'Get discovered by brands across Africa and beyond — not buried in an Instagram feed.'       },
     ],
   },
@@ -72,7 +72,7 @@ export const COPY = {
   // ── Footer ───────────────────────────────────────────────
   footer: {
     tagline:     "Ghana's first curated marketplace for verified creative talent.",
-    tagline_sub: 'Secure escrow. Editorial review. Real results.',
+    tagline_sub: 'Payment protected. Editorial review. Real results.',
     copyright:   'Accra Creatives Hub',
     location:    'Accra, Ghana',
   },
@@ -83,7 +83,7 @@ export const COPY = {
   // ── Meta / SEO ───────────────────────────────────────────
   meta: {
     title:       'Accra Creatives Hub — Ghana\'s Premier Creative Marketplace',
-    description: "Hire Ghana's most verified graphic designers, UI/UX designers, and motion artists. Secure escrow. Editorial curation. World-class creative talent.",
+    description: "Hire Ghana's most verified graphic designers, UI/UX designers, and motion artists. Payment protected. Editorial curation. World-class creative talent.",
     og_title:    'Accra Creatives Hub',
     og_description: "Where Africa's best creative talent meets the world.",
   },

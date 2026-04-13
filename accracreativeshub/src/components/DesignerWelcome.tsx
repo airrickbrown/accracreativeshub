@@ -40,7 +40,7 @@ export default function DesignerWelcome({ onContinue, onBrowse }: Props) {
     {
       icon:  '◉',
       title: 'Go live and start earning',
-      body:  'Once approved, your profile is visible to clients. Receive structured briefs, collaborate securely, and get paid via escrow — every time.',
+      body:  'Once approved, your profile is visible to clients. Receive structured briefs, collaborate securely, and get paid through our platform — every time.',
     },
   ]
 

@@ -1,17 +1,59 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { S, fmt } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, StatCard } from './UI'
 import Nav from './Nav'
 import { DISPUTES_DATA, ORDERS, DESIGNERS } from '../data/mockData'
 import { supabase } from '../lib/supabase'
+import AdminToast, { useToast } from './AdminToast'
+import AdminConfirmModal, { ConfirmConfig } from './AdminConfirmModal'
 
 interface AdminPanelProps { onClose: () => void }
+
+// Dispute shape extended with UI-only fields
+interface Dispute {
+  id:                    number
+  client:                string
+  client_email:          string
+  designer:              string
+  project:               string
+  amount:                number
+  reason:                string
+  status:                string
+  raised:                string
+  order_id:              number | null
+  evidence_requested:    boolean
+  evidence_requested_at: string | null
+  new_response:          boolean
+}
+
+function toDispute(raw: any): Dispute {
+  return {
+    id:                    raw.id,
+    client:                raw.client       || '',
+    client_email:          raw.client_email || '',
+    designer:              raw.designer     || '',
+    project:               raw.project      || '',
+    amount:                raw.amount       || 0,
+    reason:                raw.reason       || '',
+    status:                raw.status       || 'open',
+    raised:                raw.raised       || '',
+    order_id:              raw.order_id     ?? null,
+    evidence_requested:    raw.evidence_requested    ?? false,
+    evidence_requested_at: raw.evidence_requested_at ?? null,
+    new_response:          false,
+  }
+}
 
 export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [tab, setTab]           = useState('applications')
   const [apps, setApps]         = useState<any[]>([])
-  const [disputes, setDisputes] = useState(DISPUTES_DATA)
+  const [disputes, setDisputes] = useState<Dispute[]>(DISPUTES_DATA.map(toDispute))
   const [isMobile, setIsMobile] = useState(false)
+  const [confirm, setConfirm]   = useState<ConfirmConfig | null>(null)
+
+  const { toasts, addToast, dismissToast } = useToast()
+  const disputesRef = useRef<Dispute[]>(disputes)
+  useEffect(() => { disputesRef.current = disputes }, [disputes])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768)
@@ -19,6 +61,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+
+  // ── Load applications ─────────────────────────────────────────────────────
 
   const loadApplications = async () => {
     const { data, error } = await supabase
@@ -43,21 +87,154 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     }
   }
 
+  // ── Load disputes from Supabase (falls back to mock data if empty) ─────────
+
+  const loadDisputes = async () => {
+    const { data } = await supabase
+      .from('disputes')
+      .select('id, client, client_email, designer, project, amount, reason, status, raised, order_id, evidence_requested, evidence_requested_at')
+      .eq('status', 'open')
+    if (data && data.length > 0) {
+      setDisputes(data.map(toDispute))
+    }
+    // else: keep mock data already in state
+  }
+
+  useEffect(() => {
+    loadApplications()
+    loadDisputes()
+  }, [])
+
+  // ── Realtime: watch for new messages on disputed orders ───────────────────
+
+  useEffect(() => {
+    const orderIds = disputesRef.current.map(d => d.order_id).filter(Boolean) as number[]
+    if (orderIds.length === 0) return
+
+    const channel = supabase
+      .channel('dispute-order-messages')
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'messages',
+          filter: `order_id=in.(${orderIds.join(',')})`,
+        },
+        async (payload: any) => {
+          const orderId  = payload.new?.order_id
+          const dispute  = disputesRef.current.find(d => d.order_id === orderId)
+          if (!dispute) return
+
+          // Mark as new response in UI
+          setDisputes(prev =>
+            prev.map(d => d.order_id === orderId ? { ...d, new_response: true } : d)
+          )
+
+          // Notify disputes inbox via Vercel function (non-blocking)
+          fetch('/api/notify-dispute-response', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientName: dispute.client,
+              orderTitle: dispute.project,
+              orderId:    dispute.order_id,
+            }),
+          }).catch(err => console.error('notify-dispute-response failed (non-fatal):', err))
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, []) // Run once on mount; order IDs are stable per admin session
+
+  // ── Approve / reject designers ────────────────────────────────────────────
+
   const approveDesigner = async (id: string) => {
     const { error } = await supabase.from('designers').update({ verified: true, public_visible: true, badge: 'new' }).eq('id', id)
-    if (error) { alert(error.message); return }
+    if (error) { addToast('error', error.message); return }
     loadApplications()
-    alert('Designer approved and now live on marketplace!')
+    addToast('success', 'Designer approved and is now live on the marketplace.')
   }
 
   const rejectDesigner = async (id: string) => {
     const { error } = await supabase.from('designers').update({ verified: false, public_visible: false }).eq('id', id)
-    if (error) { alert(error.message); return }
+    if (error) { addToast('error', error.message); return }
     loadApplications()
-    alert('Application rejected.')
+    addToast('info', 'Application rejected.')
   }
 
-  useEffect(() => { loadApplications() }, [])
+  // ── Dispute actions ───────────────────────────────────────────────────────
+
+  const handleRelease = (d: Dispute) => {
+    setConfirm({
+      title:        'Release funds to designer?',
+      message:      `This will release ${fmt(d.amount)} to ${d.designer}. This action cannot be undone.`,
+      confirmLabel: 'Release Funds',
+      variant:      'success',
+      onConfirm:    () => {
+        setDisputes(prev => prev.filter(x => x.id !== d.id))
+        addToast('success', `Funds released to ${d.designer}.`)
+      },
+    })
+  }
+
+  const handleRefund = (d: Dispute) => {
+    setConfirm({
+      title:        'Refund client?',
+      message:      `This will refund ${fmt(d.amount)} to ${d.client}. This action cannot be undone.`,
+      confirmLabel: 'Issue Refund',
+      variant:      'danger',
+      onConfirm:    () => {
+        setDisputes(prev => prev.filter(x => x.id !== d.id))
+        addToast('success', `Refund of ${fmt(d.amount)} issued to ${d.client}.`)
+      },
+    })
+  }
+
+  const handleRequestEvidence = async (d: Dispute) => {
+    // 1. Update Supabase dispute record
+    const now = new Date().toISOString()
+    supabase
+      .from('disputes')
+      .update({ evidence_requested: true, evidence_requested_at: now })
+      .eq('id', d.id)
+      .then(({ error }) => {
+        if (error) console.error('Supabase evidence update (non-fatal):', error.message)
+      })
+
+    // 2. Send email via Vercel function
+    const emailRes = await fetch('/api/send-evidence-request', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientEmail: d.client_email || '',
+        clientName:  d.client,
+        orderTitle:  d.project,
+        orderAmount: fmt(d.amount),
+        orderId:     d.order_id ?? d.id,
+      }),
+    }).catch(err => { console.error('send-evidence-request fetch error:', err); return null })
+
+    if (emailRes && !emailRes.ok) {
+      const err = await emailRes.json().catch(() => ({}))
+      console.error('send-evidence-request error:', err)
+      // Still mark locally — the Supabase update succeeded
+    }
+
+    // 3. Update local state
+    setDisputes(prev =>
+      prev.map(x => x.id === d.id
+        ? { ...x, evidence_requested: true, evidence_requested_at: now }
+        : x
+      )
+    )
+
+    // 4. Toast
+    addToast('info', `Evidence request sent to ${d.client} — they will receive an email to submit proof via the order chat.`)
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────────────────────
 
   const TABS = [
     { k: 'applications', l: `Applications (${apps.length})` },
@@ -68,7 +245,6 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
-      {/* ── FIX: All Nav props provided ── */}
       <Nav
         scrolled={true}
         user={null}
@@ -81,6 +257,14 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         onLogin={() => {}}
         onSignOut={() => {}}
       />
+
+      {/* ── Confirm modal (overlays admin panel only) ── */}
+      {confirm && (
+        <AdminConfirmModal config={confirm} onCancel={() => setConfirm(null)} />
+      )}
+
+      {/* ── Toast stack ── */}
+      <AdminToast toasts={toasts} onDismiss={dismissToast} />
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '88px 16px 60px' : '100px 40px 60px' }}>
 
@@ -130,7 +314,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Btn variant="outline" size="sm" onClick={() => alert('Portfolio review coming soon')}>Review</Btn>
+                  <Btn variant="outline" size="sm" onClick={() => addToast('info', 'Portfolio review coming soon.')}>Review</Btn>
                   <Btn variant="danger"  size="sm" onClick={() => rejectDesigner(a.id)}>Reject</Btn>
                   <Btn variant="success" size="sm" onClick={() => approveDesigner(a.id)}>Approve</Btn>
                 </div>
@@ -145,18 +329,79 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
             {disputes.length === 0 && <Body style={{ textAlign: 'center', padding: '40px 0' }}>No active disputes</Body>}
             {disputes.map((d) => (
               <div key={d.id} style={{ background: S.surface, border: '1px solid rgba(255,180,171,0.2)', padding: isMobile ? '16px' : '20px 24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                  <Hl style={{ fontSize: 16, fontWeight: 600 }}>{d.project}</Hl>
+
+                {/* Title row with status badges */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <Hl style={{ fontSize: 16, fontWeight: 600 }}>{d.project}</Hl>
+                    {/* "Awaiting Evidence" badge — shown after evidence is requested */}
+                    {d.evidence_requested && !d.new_response && (
+                      <span style={{
+                        background:    'rgba(245,158,11,0.12)',
+                        border:        '1px solid rgba(245,158,11,0.35)',
+                        color:         '#fbbf24',
+                        fontSize:      9,
+                        fontFamily:    S.body,
+                        fontWeight:    700,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        padding:       '3px 8px',
+                        borderRadius:  4,
+                        whiteSpace:    'nowrap',
+                      }}>
+                        ⏳ Awaiting Evidence
+                      </span>
+                    )}
+                    {/* "New Response" badge — shown when a new message arrives */}
+                    {d.new_response && (
+                      <span
+                        style={{
+                          background:    'rgba(22,163,74,0.12)',
+                          border:        '1px solid rgba(22,163,74,0.35)',
+                          color:         '#4ade80',
+                          fontSize:      9,
+                          fontFamily:    S.body,
+                          fontWeight:    700,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          padding:       '3px 8px',
+                          borderRadius:  4,
+                          whiteSpace:    'nowrap',
+                          cursor:        'pointer',
+                        }}
+                        onClick={() =>
+                          setDisputes(prev => prev.map(x => x.id === d.id ? { ...x, new_response: false } : x))
+                        }
+                        title="Click to dismiss"
+                      >
+                        ● New Response
+                      </span>
+                    )}
+                  </div>
                   <Hl style={{ color: S.gold, fontSize: 18 }}>{fmt(d.amount)}</Hl>
                 </div>
+
                 <Body style={{ fontSize: 11, marginBottom: 8 }}>Client: {d.client} · Designer: {d.designer} · Raised: {d.raised}</Body>
+                {d.evidence_requested && d.evidence_requested_at && (
+                  <Body style={{ fontSize: 10, color: '#fbbf24', marginBottom: 6 }}>
+                    Evidence requested {new Date(d.evidence_requested_at).toLocaleString()}
+                  </Body>
+                )}
                 <div style={{ background: S.bgLow, borderLeft: `3px solid ${S.danger}`, padding: '10px 14px', marginBottom: 14 }}>
                   <Body style={{ fontSize: 12 }}>"{d.reason}"</Body>
                 </div>
+
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <Btn variant="success" size="sm" onClick={() => { setDisputes(p => p.filter(x => x.id !== d.id)); alert('Funds released to designer.') }}>Release to Designer</Btn>
-                  <Btn variant="danger"  size="sm" onClick={() => { setDisputes(p => p.filter(x => x.id !== d.id)); alert('Refund issued to client.') }}>Refund Client</Btn>
-                  <Btn variant="ghost"   size="sm" onClick={() => alert('Evidence requested.')}>Request Evidence</Btn>
+                  <Btn variant="success" size="sm" onClick={() => handleRelease(d)}>Release to Designer</Btn>
+                  <Btn variant="danger"  size="sm" onClick={() => handleRefund(d)}>Refund Client</Btn>
+                  <Btn
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => !d.evidence_requested && handleRequestEvidence(d)}
+                    style={{ opacity: d.evidence_requested ? 0.45 : 1, cursor: d.evidence_requested ? 'not-allowed' : 'pointer' }}
+                  >
+                    {d.evidence_requested ? 'Evidence Requested ✓' : 'Request Evidence'}
+                  </Btn>
                 </div>
               </div>
             ))}
@@ -181,7 +426,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                     {d.featured && <Body style={{ fontSize: 11, color: S.gold }}>Currently featured · GH₵200/mo</Body>}
-                    <Btn variant={d.featured ? 'ghost' : 'outline'} size="sm" onClick={() => alert(d.featured ? `${d.name} removed` : `${d.name} added — invoice GH₵200 sent`)}>
+                    <Btn
+                      variant={d.featured ? 'ghost' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        if (d.featured) {
+                          addToast('info', `${d.name} removed from featured slots.`)
+                        } else {
+                          addToast('success', `${d.name} added to featured slots — invoice GH₵200 sent.`)
+                        }
+                      }}
+                    >
                       {d.featured ? 'Remove' : 'Feature'}
                     </Btn>
                   </div>

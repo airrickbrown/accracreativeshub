@@ -25,7 +25,7 @@ const PILLARS = [
   {
     icon:  '◐',
     title: 'Protected',
-    body:  'Every transaction is secured through escrow. Funds are only released when the client approves. Both sides are protected, always.',
+    body:  'Every transaction goes through our platform payment workflow. Funds are only released when the client approves the delivery. Both sides are protected, always.',
   },
   {
     icon:  '◑',
@@ -38,7 +38,7 @@ const STATS = [
   { value: 'GH₵ 0',  label: 'Listing Fee',      sub: 'Free to join' },
   { value: '10%',     label: 'Commission Only',   sub: 'On completed orders' },
   { value: '100%',    label: 'Editorial Review',  sub: 'Every designer vetted' },
-  { value: 'Escrow',  label: 'Payment Security',  sub: 'Every transaction' },
+  { value: '100%',    label: 'Payment Protected',  sub: 'Every transaction' },
 ]
 
 export default function AboutPage({ onClose, onSignup, onContact }: Props) {
@@ -145,7 +145,7 @@ export default function AboutPage({ onClose, onSignup, onContact }: Props) {
               lineHeight: 1.85,
               margin: 0,
             }}>
-              A curated, verified, and escrow-protected marketplace where Ghana&apos;s best creative talent — graphic designers, UI/UX designers, and motion artists — meets clients who understand the value of real craft.
+              A curated, verified, and payment-protected marketplace where Ghana&apos;s best creative talent — graphic designers, UI/UX designers, and motion artists — meets clients who understand the value of real craft.
             </p>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function AboutPage({ onClose, onSignup, onContact }: Props) {
           }}>
             {[
               { icon: '◈', statement: 'Every creative on our platform is reviewed by our editorial board.' },
-              { icon: '◉', statement: 'Every transaction is secured through escrow.' },
+              { icon: '◉', statement: 'Every transaction is payment-protected through our platform workflow.' },
             ].map((item, i) => (
               <div key={i} style={{
                 background: S.bgLow,
