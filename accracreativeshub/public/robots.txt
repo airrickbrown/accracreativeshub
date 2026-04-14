@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin-sovereign-2024
 
-Sitemap: https://accracreativeshub.com/sitemap.xml
+Sitemap: https://www.accracreativeshub.com/sitemap.xml

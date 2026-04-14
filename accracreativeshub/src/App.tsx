@@ -38,6 +38,7 @@ import { supabase } from './lib/supabase'
 import { COPY } from './lib/copy'
 import { useOwnPresence } from './components/PresenceIndicator'
 import { HelpButton, NotFoundPage} from './components/LoadingSpinner'
+import CookieBanner from './components/CookieBanner'
 
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -655,6 +656,7 @@ export default function App() {
           !showWelcome
         }
       />
+      <CookieBanner />
     </div>
   )
 }
