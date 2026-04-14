@@ -25,6 +25,7 @@ import TermsPage from './components/TermsPage'
 import PrivacyPage from './components/PrivacyPage'
 import PaymentsDisputesPage from './components/PaymentsDisputesPage'
 import DesignerAgreementPage from './components/DesignerAgreementPage'
+import DesignerAgreementModal from './components/DesignerAgreementModal'
 import ContactPage from './components/ContactPage'
 import AboutPage from './components/AboutPage'
 import AdminRoute from './components/AdminRoute'
@@ -32,6 +33,8 @@ import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
+// @ts-ignore
+import { supabase } from './lib/supabase'
 import { COPY } from './lib/copy'
 import { useOwnPresence } from './components/PresenceIndicator'
 import { HelpButton, NotFoundPage} from './components/LoadingSpinner'
@@ -77,6 +80,8 @@ export default function App() {
   const [showContact, setShowContact]           = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  // null = not yet loaded, false = not accepted (show modal), true = accepted
+  const [agreementAccepted, setAgreementAccepted] = useState<boolean | null>(null)
   const [showWelcome, setShowWelcome]           = useState(false)
   const [showDesignerWelcome, setShowDesignerWelcome] = useState(false)
   const [currentPath, setCurrentPath]           = useState(window.location.pathname)
@@ -150,6 +155,20 @@ export default function App() {
     }
   }, [currentPath, user, isClient, isDesigner])
 
+  // ── Fetch designer agreement status whenever a designer logs in ──
+  useEffect(() => {
+    if (!user || !isDesigner) { setAgreementAccepted(null); return }
+    supabase
+      .from('profiles')
+      .select('designer_agreement_accepted')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }: any) => {
+        setAgreementAccepted(data?.designer_agreement_accepted === true)
+      })
+      .catch(() => setAgreementAccepted(true)) // fail open — don't block on Supabase error
+  }, [user?.id, isDesigner])
+
   useEffect(() => {
     setTimeout(() => setHeroIn(true), 100)
     const onScroll   = () => setScrolled(window.scrollY > 60)
@@ -221,6 +240,11 @@ export default function App() {
       `}</style>
 
       <AuthCallback />
+
+      {/* ── Designer Agreement Gate (z=500 — blocks all other overlays) ── */}
+      {user && isDesigner && agreementAccepted === false && (
+        <DesignerAgreementModal onAccept={() => setAgreementAccepted(true)} />
+      )}
 
       {/* ── Logout confirmation ── */}
       {showLogoutConfirm && (
