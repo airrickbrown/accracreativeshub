@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl } from './UI'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 
@@ -39,7 +38,6 @@ const REVISION_OPTIONS = [
   'Unlimited',
 ]
 
-// @ts-ignore
 const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
 const FROM = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
 

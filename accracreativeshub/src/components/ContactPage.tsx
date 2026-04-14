@@ -7,7 +7,6 @@ import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, GoldLine } from './UI'
 
-// @ts-ignore
 const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
 const FROM_ADDR  = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
 const TO_ADDR    = 'hello@accracreativeshub.com'

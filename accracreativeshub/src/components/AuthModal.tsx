@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 import { signUpUser } from '../lib/auth'
 import { checkRateLimit, formatRetryTime, resetRateLimit } from '../lib/rateLimiter'

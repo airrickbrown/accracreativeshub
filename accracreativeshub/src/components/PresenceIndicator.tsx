@@ -10,7 +10,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { S } from '../styles/tokens'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 

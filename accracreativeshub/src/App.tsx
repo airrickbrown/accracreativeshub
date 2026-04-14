@@ -33,7 +33,6 @@ import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
-// @ts-ignore
 import { supabase } from './lib/supabase'
 import { COPY } from './lib/copy'
 import { useOwnPresence } from './components/PresenceIndicator'
@@ -89,7 +88,7 @@ export default function App() {
   useOwnPresence()
 
   // ── Auth state from context — NEVER modified by overlay logic ──
-  const { user, signOut, isAdmin, isDesigner, isClient } = useAuth()
+  const { user, signOut, isAdmin, isDesigner, isClient, justVerified, clearJustVerified } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
@@ -142,6 +141,19 @@ export default function App() {
     return () => window.removeEventListener('popstate', onChange)
   }, [])
 
+  // ── Post-verification welcome redirect ──
+  // Fires once when justVerified flips true (email link clicked).
+  // clearJustVerified resets the flag so this doesn't re-fire on refreshes.
+  useEffect(() => {
+    if (!justVerified) return
+    clearJustVerified()
+    if (isDesigner) {
+      openOverlay(() => setShowDesignerWelcome(true))
+    } else if (isClient) {
+      openOverlay(() => setShowWelcome(true))
+    }
+  }, [justVerified, isDesigner, isClient, clearJustVerified, openOverlay])
+
   useEffect(() => {
     if (currentPath === '/welcome' && user && isClient) {
       setShowWelcome(true)
@@ -159,15 +171,18 @@ export default function App() {
   // ── Fetch designer agreement status whenever a designer logs in ──
   useEffect(() => {
     if (!user || !isDesigner) { setAgreementAccepted(null); return }
-    supabase
-      .from('profiles')
-      .select('designer_agreement_accepted')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }: any) => {
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('designer_agreement_accepted')
+          .eq('id', user.id)
+          .single()
         setAgreementAccepted(data?.designer_agreement_accepted === true)
-      })
-      .catch(() => setAgreementAccepted(true)) // fail open — don't block on Supabase error
+      } catch {
+        setAgreementAccepted(true) // fail open — don't block on Supabase error
+      }
+    })()
   }, [user?.id, isDesigner])
 
   useEffect(() => {

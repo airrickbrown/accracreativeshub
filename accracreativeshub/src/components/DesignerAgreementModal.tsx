@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { S } from '../styles/tokens'
 import { Hl, Body, Lbl } from './UI'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 

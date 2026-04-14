@@ -16,7 +16,6 @@ import Nav from './Nav'
 import { useAuth } from '../AuthContext'
 
 // ── Resend — same pattern as ContactPage ─────────────────────────────────────
-// @ts-ignore
 const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
 const FROM_ADDR    = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
 const SUPPORT_ADDR = 'designers@accracreativeshub.com'
@@ -140,21 +139,26 @@ export default function DesignerDashboard({ designer, onClose }: DesignerDashboa
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [designer.id, designer.referralCode],
   )
-  const referralUrl = `hub.gh/r/${referralCode}`
+  // Referral URL uses the real domain — referral tracking backend is pending
+  const referralUrl = `accracreativeshub.com/r/${referralCode}`
 
-  // ── Chart data (TODO: replace with real Supabase monthly aggregates) ──
+  // ── Chart data — placeholder until Supabase monthly aggregates are wired ──
+  // TODO: Replace with real query:
+  //   SELECT DATE_TRUNC('month', created_at) as month, SUM(amount * 0.9) as earnings
+  //   FROM orders WHERE designer_id = designer.id AND status = 'completed'
+  //   GROUP BY 1 ORDER BY 1 LIMIT 6
   const monthly = [
-    { m: 'Jan', e: 1200 }, { m: 'Feb', e: 2100 }, { m: 'Mar', e: 1840 },
-    { m: 'Apr', e: 3200 }, { m: 'May', e: 2700 }, { m: 'Jun', e: 3680 },
+    { m: 'Jan', e: 0 }, { m: 'Feb', e: 0 }, { m: 'Mar', e: 0 },
+    { m: 'Apr', e: 0 }, { m: 'May', e: 0 }, { m: 'Jun', e: 0 },
   ]
   const maxE = Math.max(...monthly.map(d => d.e))
   const pts  = monthly.map((d, i) => `${60 + i * 100},${140 - (d.e / maxE) * 110}`).join(' ')
 
-  // ── Ledger rows (TODO: fetch from Supabase orders WHERE designer_id = designer.id) ──
-  const ledger: LedgerRow[] = [
-    { project: 'Indigo Textile Identity',    ref: 'ACH-00412', date: 'Oct 12, 2026', type: 'Commission', amount: 12400, status: 'Active', payout: 'Pending' },
-    { project: 'Agenta Architecture Render', ref: 'ACH-00389', date: 'Oct 08, 2026', type: 'Commission', amount: 8200,  status: 'Done',   payout: 'Paid'    },
-  ]
+  // ── Ledger rows — placeholder until real order history is fetched ──
+  // TODO: Replace with real query:
+  //   SELECT project_name, id, created_at, amount, status, payout_status
+  //   FROM orders WHERE designer_id = designer.id ORDER BY created_at DESC
+  const ledger: LedgerRow[] = []
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 

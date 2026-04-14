@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { S, fmt } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, StatCard } from './UI'
 import Nav from './Nav'
-import { DISPUTES_DATA, ORDERS, DESIGNERS } from '../data/mockData'
+import { DISPUTES_DATA, ORDERS } from '../data/mockData'
 import { supabase } from '../lib/supabase'
 import AdminToast, { useToast } from './AdminToast'
 import AdminConfirmModal, { ConfirmConfig } from './AdminConfirmModal'
+import { STATUS_LABELS, STATUS_COLORS } from '../lib/orderStatus'
 
 interface AdminPanelProps { onClose: () => void }
 
@@ -45,11 +46,16 @@ function toDispute(raw: any): Dispute {
 }
 
 export default function AdminPanel({ onClose }: AdminPanelProps) {
-  const [tab, setTab]           = useState('applications')
-  const [apps, setApps]         = useState<any[]>([])
-  const [disputes, setDisputes] = useState<Dispute[]>(DISPUTES_DATA.map(toDispute))
-  const [isMobile, setIsMobile] = useState(false)
-  const [confirm, setConfirm]   = useState<ConfirmConfig | null>(null)
+  const [tab, setTab]                       = useState('applications')
+  const [apps, setApps]                     = useState<any[]>([])
+  const [disputes, setDisputes]             = useState<Dispute[]>(DISPUTES_DATA.map(toDispute))
+  const [isMobile, setIsMobile]             = useState(false)
+  const [confirm, setConfirm]               = useState<ConfirmConfig | null>(null)
+  const [reviewingDesigner, setReviewingDesigner] = useState<any>(null)
+  const [featuredDesigners, setFeaturedDesigners] = useState<any[]>([])
+  const [featuredLoading, setFeaturedLoading]     = useState(false)
+  const [revenueTotal, setRevenueTotal]           = useState<number | null>(null)
+  const [liveOrders, setLiveOrders]               = useState<any[]>([])
 
   const { toasts, addToast, dismissToast } = useToast()
   const disputesRef = useRef<Dispute[]>(disputes)
@@ -67,7 +73,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const loadApplications = async () => {
     const { data, error } = await supabase
       .from('designers')
-      .select('*, profiles(full_name, email, phone, location)')
+      .select('*, profiles:id(full_name, email, phone, location)')
       .eq('verified', false)
       .eq('public_visible', false)
 
@@ -75,14 +81,82 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     if (data) {
       setApps(data.map((d: any) => ({
         id:             d.id,
-        name:           d.profiles?.full_name || 'Unnamed Designer',
-        email:          d.profiles?.email     || '—',
-        category:       d.category            || 'Unspecified',
-        phone:          d.profiles?.phone     || 'No phone',
-        location:       d.profiles?.location  || '—',
+        name:           d.profiles?.full_name  || 'Unnamed Designer',
+        email:          d.profiles?.email      || '—',
+        category:       d.category             || 'Unspecified',
+        phone:          d.profiles?.phone      || 'No phone',
+        location:       d.profiles?.location   || '—',
         idVerified:     !!d.id_uploaded,
-        portfolioCount: d.portfolio_count || 0,
+        idUrl:          d.id_url               || null,
+        portfolioUrls:  d.portfolio_urls       || [],
+        portfolioCount: (d.portfolio_urls || []).length,
         appliedAt:      d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown',
+      })))
+    }
+  }
+
+  // ── Load real revenue total ───────────────────────────────────────────────
+
+  const loadRevenue = async () => {
+    const { data } = await supabase
+      .from('orders')
+      .select('amount')
+      .eq('status', 'completed')
+    if (data) {
+      setRevenueTotal(data.reduce((sum: number, o: any) => sum + (o.amount || 0), 0))
+    }
+  }
+
+  // ── Load featured designers from Supabase ─────────────────────────────────
+
+  const loadFeaturedDesigners = async () => {
+    setFeaturedLoading(true)
+    const { data } = await supabase
+      .from('designers')
+      .select('id, featured, badge, category, profiles:id(full_name)')
+      .eq('public_visible', true)
+      .order('featured', { ascending: false })
+    if (data) setFeaturedDesigners(data)
+    setFeaturedLoading(false)
+  }
+
+  const toggleFeatured = async (designerId: string, currently: boolean) => {
+    const next = !currently
+    const { error } = await supabase
+      .from('designers')
+      .update({ featured: next })
+      .eq('id', designerId)
+    if (error) { addToast('error', error.message); return }
+    setFeaturedDesigners(prev =>
+      prev.map(d => d.id === designerId ? { ...d, featured: next } : d)
+    )
+    const designer = featuredDesigners.find(d => d.id === designerId)
+    const name = designer?.profiles?.full_name || 'Designer'
+    addToast(next ? 'success' : 'info', next
+      ? `${name} added to featured slots.`
+      : `${name} removed from featured slots.`
+    )
+  }
+
+  // ── Load real orders ──────────────────────────────────────────────────────
+
+  const loadOrders = async () => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, project_name, amount, status, rush, revisions_used, revisions_total, created_at, profiles:client_id(full_name), designer:designer_id(profiles:id(full_name))')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (!error && data) {
+      setLiveOrders(data.map((o: any) => ({
+        id:         o.id,
+        project:    o.project_name || 'Unnamed Project',
+        client:     o.profiles?.full_name || 'Unknown Client',
+        designer:   o.designer?.profiles?.full_name || 'Unknown Designer',
+        amount:     o.amount || 0,
+        commission: Math.round((o.amount || 0) * 0.1),
+        status:     o.status || 'pending',
+        rush:       !!o.rush,
+        revisions:  { used: o.revisions_used || 0, total: o.revisions_total || 3 },
       })))
     }
   }
@@ -103,6 +177,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   useEffect(() => {
     loadApplications()
     loadDisputes()
+    loadRevenue()
   }, [])
 
   // ── Realtime: watch for new messages on disputed orders ───────────────────
@@ -169,12 +244,22 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const handleRelease = (d: Dispute) => {
     setConfirm({
       title:        'Release funds to designer?',
-      message:      `This will release ${fmt(d.amount)} to ${d.designer}. This action cannot be undone.`,
+      message:      `This will release ${fmt(d.amount)} to ${d.designer}. This cannot be undone. Payout will be queued for manual transfer.`,
       confirmLabel: 'Release Funds',
       variant:      'success',
-      onConfirm:    () => {
+      onConfirm:    async () => {
+        // Update order status
+        if (d.order_id) {
+          await supabase.from('orders')
+            .update({ status: 'completed', payout_status: 'pending_transfer' })
+            .eq('id', d.order_id)
+        }
+        // Update dispute status
+        await supabase.from('disputes')
+          .update({ status: 'resolved_release', resolved_at: new Date().toISOString() })
+          .eq('id', d.id)
         setDisputes(prev => prev.filter(x => x.id !== d.id))
-        addToast('success', `Funds released to ${d.designer}.`)
+        addToast('success', `Funds queued for transfer to ${d.designer}. Process manually via Paystack dashboard.`)
       },
     })
   }
@@ -182,12 +267,22 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const handleRefund = (d: Dispute) => {
     setConfirm({
       title:        'Refund client?',
-      message:      `This will refund ${fmt(d.amount)} to ${d.client}. This action cannot be undone.`,
+      message:      `This will refund ${fmt(d.amount)} to ${d.client}. This cannot be undone. Issue manually via Paystack dashboard.`,
       confirmLabel: 'Issue Refund',
       variant:      'danger',
-      onConfirm:    () => {
+      onConfirm:    async () => {
+        // Update order status
+        if (d.order_id) {
+          await supabase.from('orders')
+            .update({ status: 'refunded' })
+            .eq('id', d.order_id)
+        }
+        // Update dispute status
+        await supabase.from('disputes')
+          .update({ status: 'resolved_refund', resolved_at: new Date().toISOString() })
+          .eq('id', d.id)
         setDisputes(prev => prev.filter(x => x.id !== d.id))
-        addToast('success', `Refund of ${fmt(d.amount)} issued to ${d.client}.`)
+        addToast('success', `Refund of ${fmt(d.amount)} queued for ${d.client}. Process manually via Paystack.`)
       },
     })
   }
@@ -239,9 +334,16 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const TABS = [
     { k: 'applications', l: `Applications (${apps.length})` },
     { k: 'disputes',     l: `Disputes (${disputes.length})` },
-    { k: 'featured',     l: 'Featured Slots'                },
     { k: 'orders',       l: 'Orders'                        },
+    { k: 'featured',     l: 'Featured Slots'                },
   ]
+
+  // Lazy-load tab data on first open
+  const handleTabChange = (k: string) => {
+    setTab(k)
+    if (k === 'featured' && featuredDesigners.length === 0) loadFeaturedDesigners()
+    if (k === 'orders'   && liveOrders.length === 0)        loadOrders()
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, overflowY: 'auto' }}>
@@ -279,16 +381,90 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 1, background: S.borderFaint, marginBottom: 28 }}>
-          <StatCard label="Pending Applications" value={`${apps.length}`}                              sub="Awaiting review"           />
-          <StatCard label="Gross Revenue"         value="₵84,200"          color={S.gold}              sub="Month to month"            />
-          <StatCard label="Pending Disputes"      value={`${disputes.filter(d => d.status === 'open').length}`}
-            color={disputes.filter(d => d.status === 'open').length > 0 ? S.danger : S.text}           sub="Requires immediate action" />
+          <StatCard label="Pending Applications" value={`${apps.length}`} sub="Awaiting review" />
+          <StatCard
+            label="Completed Revenue"
+            value={revenueTotal === null ? '…' : fmt(revenueTotal)}
+            color={S.gold}
+            sub="From completed orders"
+          />
+          <StatCard
+            label="Open Disputes"
+            value={`${disputes.filter(d => d.status === 'open').length}`}
+            color={disputes.filter(d => d.status === 'open').length > 0 ? S.danger : S.text}
+            sub="Requires action"
+          />
         </div>
+
+        {/* ── Portfolio review modal ──────────────────────────────────────────── */}
+        {reviewingDesigner && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.92)', overflowY: 'auto', padding: isMobile ? '20px 12px' : 40 }}>
+            <div style={{ maxWidth: 860, margin: '0 auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <Lbl style={{ marginBottom: 6 }}>Portfolio Review</Lbl>
+                  <Hl style={{ fontSize: isMobile ? 22 : 32, fontWeight: 300 }}>{reviewingDesigner.name}</Hl>
+                  <Body style={{ fontSize: 12, marginTop: 4 }}>{reviewingDesigner.category} · {reviewingDesigner.location} · Applied {reviewingDesigner.appliedAt}</Body>
+                </div>
+                <Btn variant="ghost" onClick={() => setReviewingDesigner(null)}>✕ Close</Btn>
+              </div>
+
+              {/* Portfolio grid */}
+              {(reviewingDesigner.portfolioUrls || []).length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 8, marginBottom: 24 }}>
+                  {reviewingDesigner.portfolioUrls.map((url: string, i: number) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', aspectRatio: '4/5', background: S.surface, overflow: 'hidden', border: `1px solid ${S.border}` }}>
+                      <img src={url} alt={`Portfolio sample ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s' }}
+                        onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ background: S.surface, border: `1px dashed ${S.border}`, padding: '32px', textAlign: 'center', marginBottom: 24 }}>
+                  <Body style={{ fontSize: 12, color: S.textFaint }}>No portfolio samples uploaded yet.</Body>
+                </div>
+              )}
+
+              {/* ID document */}
+              {reviewingDesigner.idUrl ? (
+                <div style={{ marginBottom: 24 }}>
+                  <Lbl style={{ marginBottom: 10 }}>Identity Document</Lbl>
+                  <a href={reviewingDesigner.idUrl} target="_blank" rel="noreferrer">
+                    <img src={reviewingDesigner.idUrl} alt="ID document" style={{ maxWidth: 360, width: '100%', border: `1px solid ${S.border}` }} />
+                  </a>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(220,85,85,0.07)', border: '1px solid rgba(220,85,85,0.25)', padding: '12px 16px', marginBottom: 24 }}>
+                  <Body style={{ fontSize: 12, color: S.danger }}>⚠ No ID document uploaded.</Body>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 8, borderTop: `1px solid ${S.borderFaint}` }}>
+                <Btn variant="success" onClick={() => {
+                  approveDesigner(reviewingDesigner.id)
+                  setReviewingDesigner(null)
+                }}>
+                  ✓ Approve Designer
+                </Btn>
+                <Btn variant="danger" onClick={() => {
+                  rejectDesigner(reviewingDesigner.id)
+                  setReviewingDesigner(null)
+                }}>
+                  ✕ Reject Application
+                </Btn>
+                <Btn variant="ghost" onClick={() => setReviewingDesigner(null)}>Cancel</Btn>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 1, background: S.borderFaint, marginBottom: 24, overflowX: 'auto' }}>
           {TABS.map((t) => (
-            <button key={t.k} onClick={() => setTab(t.k)} style={{ flex: 1, background: tab === t.k ? S.goldDim : S.surface, border: 'none', color: tab === t.k ? S.gold : S.textMuted, padding: '12px 8px', fontFamily: S.headline, fontSize: isMobile ? 8 : 10, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            <button key={t.k} onClick={() => handleTabChange(t.k)} style={{ flex: 1, background: tab === t.k ? S.goldDim : S.surface, border: 'none', color: tab === t.k ? S.gold : S.textMuted, padding: '12px 8px', fontFamily: S.headline, fontSize: isMobile ? 8 : 10, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {t.l}
             </button>
           ))}
@@ -314,7 +490,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Btn variant="outline" size="sm" onClick={() => addToast('info', 'Portfolio review coming soon.')}>Review</Btn>
+                  <Btn variant="gold" size="sm" onClick={() => setReviewingDesigner(a)}>Review Portfolio</Btn>
                   <Btn variant="danger"  size="sm" onClick={() => rejectDesigner(a.id)}>Reject</Btn>
                   <Btn variant="success" size="sm" onClick={() => approveDesigner(a.id)}>Approve</Btn>
                 </div>
@@ -411,37 +587,51 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         {/* Featured */}
         {tab === 'featured' && (
           <div>
-            <div style={{ background: S.goldDim, border: `1px solid ${S.borderFaint}`, padding: '12px 16px', marginBottom: 16 }}>
-              <Body style={{ fontSize: 11, color: S.textFaint }}>Featured slots appear at the top of the marketplace. Charging GH₵200/month per slot. 3 slots available.</Body>
+            <div style={{ background: S.goldDim, border: `1px solid ${S.borderFaint}`, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <Body style={{ fontSize: 11, color: S.textFaint }}>
+                Featured designers appear at the top of the marketplace. Max 3 featured slots at any time.
+              </Body>
+              <Body style={{ fontSize: 11, color: S.gold }}>
+                {featuredDesigners.filter(d => d.featured).length} / 3 slots used
+              </Body>
             </div>
+            {featuredLoading && <Body style={{ padding: '20px 0', fontSize: 12 }}>Loading designers…</Body>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {DESIGNERS.map((d) => (
-                <div key={d.id} style={{ background: S.surface, border: `1px solid ${d.featured ? S.gold : S.border}`, padding: isMobile ? '12px' : '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: d.color, border: `2px solid ${S.gold}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: S.text, fontSize: 11, fontWeight: 700, fontFamily: S.body }}>{d.avatar}</div>
-                    <div>
-                      <Hl style={{ fontSize: 14, fontWeight: 600 }}>{d.name}</Hl>
-                      <Body style={{ fontSize: 11 }}>{d.category}</Body>
+              {featuredDesigners.map((d) => {
+                const name    = d.profiles?.full_name || 'Unknown Designer'
+                const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                return (
+                  <div key={d.id} style={{ background: S.surface, border: `1px solid ${d.featured ? S.gold : S.border}`, padding: isMobile ? '12px' : '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1a2a1a', border: `2px solid ${S.gold}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: S.text, fontSize: 11, fontWeight: 700, fontFamily: S.body }}>{initials}</div>
+                      <div>
+                        <Hl style={{ fontSize: 14, fontWeight: 600 }}>{name}</Hl>
+                        <Body style={{ fontSize: 11 }}>{d.category || 'Uncategorised'}</Body>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                      {d.featured && <Body style={{ fontSize: 11, color: S.gold }}>★ Featured</Body>}
+                      <Btn
+                        variant={d.featured ? 'ghost' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                          const featuredCount = featuredDesigners.filter(x => x.featured).length
+                          if (!d.featured && featuredCount >= 3) {
+                            addToast('error', 'Maximum 3 featured slots. Remove one before adding another.')
+                            return
+                          }
+                          toggleFeatured(d.id, d.featured)
+                        }}
+                      >
+                        {d.featured ? 'Remove' : '+ Feature'}
+                      </Btn>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                    {d.featured && <Body style={{ fontSize: 11, color: S.gold }}>Currently featured · GH₵200/mo</Body>}
-                    <Btn
-                      variant={d.featured ? 'ghost' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        if (d.featured) {
-                          addToast('info', `${d.name} removed from featured slots.`)
-                        } else {
-                          addToast('success', `${d.name} added to featured slots — invoice GH₵200 sent.`)
-                        }
-                      }}
-                    >
-                      {d.featured ? 'Remove' : 'Feature'}
-                    </Btn>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
+              {!featuredLoading && featuredDesigners.length === 0 && (
+                <Body style={{ textAlign: 'center', padding: '32px 0', fontSize: 12 }}>No approved designers yet.</Body>
+              )}
             </div>
           </div>
         )}
@@ -449,27 +639,48 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
         {/* Orders */}
         {tab === 'orders' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {ORDERS.map((o) => (
-              <div key={o.id} style={{ background: S.surface, border: `1px solid ${S.border}`, padding: isMobile ? '12px' : '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <Hl style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{o.project}</Hl>
-                  <Body style={{ fontSize: 11 }}>{o.client} → {o.designer} {o.rush && <span style={{ color: '#fcd34d' }}>· ⚡ Rush</span>} · Revisions: {o.revisions.used}/{o.revisions.total}</Body>
-                </div>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <Hl style={{ color: S.gold, fontSize: 18 }}>{fmt(o.amount)}</Hl>
-                    <Body style={{ fontSize: 10 }}>Commission: {fmt(o.commission)}</Body>
+            {liveOrders.length === 0 && (
+              <Body style={{ textAlign: 'center', padding: '40px 0', fontSize: 12 }}>No orders yet.</Body>
+            )}
+            {liveOrders.map((o) => {
+              const statusColor = (STATUS_COLORS as any)[o.status] || S.gold
+              return (
+                <div key={o.id} style={{ background: S.surface, border: `1px solid ${S.border}`, padding: isMobile ? '12px' : '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <Hl style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{o.project}</Hl>
+                    <Body style={{ fontSize: 11 }}>
+                      {o.client} → {o.designer}
+                      {o.rush && <span style={{ color: '#fcd34d' }}> · ⚡ Rush</span>}
+                      {' · '}Revisions: {o.revisions.used}/{o.revisions.total}
+                    </Body>
                   </div>
-                  <div style={{ background: o.status === 'delivered' ? 'rgba(74,154,74,0.12)' : S.goldDim, color: o.status === 'delivered' ? S.success : S.gold, fontSize: 9, padding: '4px 10px', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: S.body, fontWeight: 700 }}>
-                    {o.status.replace('_', ' ')}
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <Hl style={{ color: S.gold, fontSize: 18 }}>{fmt(o.amount)}</Hl>
+                      <Body style={{ fontSize: 10 }}>Commission: {fmt(o.commission)}</Body>
+                    </div>
+                    <div style={{
+                      background: `${statusColor}18`,
+                      color: statusColor,
+                      border: `1px solid ${statusColor}40`,
+                      fontSize: 9, padding: '4px 10px',
+                      letterSpacing: '0.12em', textTransform: 'uppercase',
+                      fontFamily: S.body, fontWeight: 700, borderRadius: 4,
+                    }}>
+                      {(STATUS_LABELS as any)[o.status] || o.status}
+                    </div>
                   </div>
                 </div>
+              )
+            })}
+            {liveOrders.length > 0 && (
+              <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: isMobile ? '12px' : '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <Body style={{ fontSize: 12 }}>Total platform commissions (all orders shown)</Body>
+                <Hl style={{ color: S.gold, fontSize: 20 }}>
+                  {fmt(liveOrders.reduce((s: number, o: any) => s + o.commission, 0))}
+                </Hl>
               </div>
-            ))}
-            <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: isMobile ? '12px' : '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-              <Body style={{ fontSize: 12 }}>Total platform commissions this period</Body>
-              <Hl style={{ color: S.gold, fontSize: 20 }}>{fmt(ORDERS.reduce((s, o) => s + o.commission, 0))}</Hl>
-            </div>
+            )}
           </div>
         )}
       </div>

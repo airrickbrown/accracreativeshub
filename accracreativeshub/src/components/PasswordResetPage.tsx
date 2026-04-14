@@ -5,10 +5,8 @@
 // 3. Clean redirect to homepage after 3 seconds with progress bar
 
 import React, { useState, useEffect } from 'react'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 
-// @ts-ignore
 const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
 const FROM = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
 

@@ -1,32 +1,29 @@
 // ── src/components/DesignerSignup.tsx ──
-// Changes from previous version:
-// - Portfolio minimum changed from 5 to 3
-// - Resume upload REMOVED from Step 3 (portfolio shows their work, that's enough)
-// - Resume info is auto-generated from their bio + experience in their profile
+// Profile completion form for already-authenticated designers.
+// The user is signed in by the time this component shows — do NOT call signUpUser here.
+// Steps: Personal Details → Portfolio Upload → Identity Verification → Final Setup
 
 import React, { useState, useEffect, useRef } from 'react'
 import { S } from '../styles/tokens'
 import { Btn, Inp, Sel, Txt, Hl, Body, Lbl, Badge, GoldLine } from './UI'
 import Nav from './Nav'
-import { signUpUser } from '../lib/auth'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../AuthContext'
 
 interface DesignerSignupProps {
   onClose: () => void
 }
 
 const STEP_ERRORS: Record<number, (form: any) => string | null> = {
+  // Step 1: Personal details — email/password removed (user is already authenticated)
   1: (f) => {
     if (!f.name.trim())     return 'Full name is required.'
-    if (!f.email.trim())    return 'Email address is required.'
-    if (!f.password.trim()) return 'Password is required.'
-    if (f.password.length < 8) return 'Password must be at least 8 characters.'
     if (!f.phone.trim())    return 'WhatsApp number is required.'
     if (!f.location.trim()) return 'Location is required.'
     if (!f.category)        return 'Please select your primary service.'
     return null
   },
   2: (f) => {
-    // ── FIX: minimum changed from 5 to 3 ──
     if (f.portfolioFiles.length < 1)
       return 'Please upload at least 1 portfolio sample to continue. (Minimum 3 required for approval.)'
     return null
@@ -45,20 +42,26 @@ const STEP_ERRORS: Record<number, (form: any) => string | null> = {
 }
 
 export default function DesignerSignup({ onClose }: DesignerSignupProps) {
+  const { user } = useAuth()
+
   const [step, setStep]           = useState(1)
   const [isMobile, setIsMobile]   = useState(false)
   const [stepError, setStepError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted]   = useState(false)
 
   const portfolioInputRef = useRef<HTMLInputElement>(null)
   const idInputRef        = useRef<HTMLInputElement>(null)
 
   const [designerAgreement, setDesignerAgreement] = useState(false)
 
+  // Pre-fill name from the authenticated user's metadata
+  const prefillName = user?.user_metadata?.full_name || ''
+
   const [form, setForm] = useState({
-    name: '', email: '', password: '', phone: '', location: '', category: '',
+    name: prefillName, phone: '', location: '', category: '',
     tagline: '', bio: '', portfolioFiles: [] as File[], portfolioPreviews: [] as string[],
     idFile: null as File | null, idFileName: '', price: '', responseTime: '',
-    showPassword: false,
   })
 
   const f = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }))
@@ -103,19 +106,114 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
     const error = STEP_ERRORS[4]?.(form)
     if (error) { setStepError(error); return }
     if (!designerAgreement) { setStepError('You must agree to the Designer Agreement before submitting.'); return }
+    if (!user) { setStepError('You must be logged in to submit your application.'); return }
+
+    setSubmitting(true)
+    setStepError(null)
 
     try {
-      if (!form.idFile) { setStepError('Please upload your government-issued ID.'); return }
-      await signUpUser({ email: form.email, password: form.password, fullName: form.name, role: 'designer' })
-      alert('Application submitted! Check your email to verify your account. Our editorial board will review your profile within 3–5 business days.')
-      onClose()
+      // ── 1. Upload portfolio images to Supabase storage ──────────────────────
+      const portfolioUrls: string[] = []
+      for (const file of form.portfolioFiles) {
+        const ext  = file.name.split('.').pop() || 'png'
+        const path = `portfolio/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadErr } = await supabase.storage
+          .from('portfolio-uploads')
+          .upload(path, file, { upsert: false })
+        if (uploadErr) {
+          // If bucket doesn't exist yet, store file name as placeholder
+          console.warn('Portfolio upload error (bucket may not exist):', uploadErr.message)
+          portfolioUrls.push(URL.createObjectURL(file)) // local preview as fallback
+        } else {
+          const { data: urlData } = supabase.storage.from('portfolio-uploads').getPublicUrl(path)
+          portfolioUrls.push(urlData.publicUrl)
+        }
+      }
+
+      // ── 2. Upload ID document ────────────────────────────────────────────────
+      let idUrl = ''
+      if (form.idFile) {
+        const ext  = form.idFile.name.split('.').pop() || 'jpg'
+        const path = `ids/${user.id}/id-${Date.now()}.${ext}`
+        const { error: idErr } = await supabase.storage
+          .from('id-uploads')
+          .upload(path, form.idFile, { upsert: true })
+        if (!idErr) {
+          const { data: urlData } = supabase.storage.from('id-uploads').getPublicUrl(path)
+          idUrl = urlData.publicUrl
+        } else {
+          console.warn('ID upload error (bucket may not exist):', idErr.message)
+        }
+      }
+
+      // ── 3. Update profiles table ─────────────────────────────────────────────
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({
+          full_name: form.name.trim(),
+          phone:     form.phone.trim(),
+          location:  form.location.trim(),
+          bio:       form.bio.trim(),
+          tagline:   form.tagline.trim(),
+        })
+        .eq('id', user.id)
+      if (profileErr) console.warn('Profile update error:', profileErr.message)
+
+      // ── 4. Update designers table ─────────────────────────────────────────────
+      const { error: designerErr } = await supabase
+        .from('designers')
+        .upsert(
+          [{
+            id:              user.id,
+            category:        form.category,
+            price_min:       parseInt(form.price, 10) || 0,
+            response_time:   form.responseTime,
+            portfolio_urls:  portfolioUrls,
+            id_uploaded:     true,
+            id_url:          idUrl || null,
+            badge:           'under_review',
+            verified:        false,
+            public_visible:  false,
+          }],
+          { onConflict: 'id' }
+        )
+      if (designerErr) console.warn('Designer update error:', designerErr.message)
+
+      setSubmitted(true)
+
     } catch (err: any) {
-      setStepError(err?.message || 'Signup failed. Please try again.')
+      setStepError(err?.message || 'Submission failed. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const initials = form.name.split(' ').map(n => n[0]).join('').slice(0, 2) || '??'
+  const initials   = form.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '??'
   const stepLabels = ['Personal Details', 'Portfolio', 'Verification', 'Final Setup']
+
+  // ── Success screen — replaces the entire form ────────────────────────────
+  if (submitted) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ maxWidth: 520, textAlign: 'center' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(74,154,74,0.12)', border: '1px solid rgba(74,154,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 28 }}>✓</div>
+          <Hl style={{ fontSize: 'clamp(26px,5vw,36px)', fontWeight: 300, marginBottom: 12 }}>
+            Application <em style={{ color: S.gold, fontStyle: 'italic' }}>submitted.</em>
+          </Hl>
+          <GoldLine />
+          <Body style={{ fontSize: 14, lineHeight: 1.9, marginBottom: 24 }}>
+            Our editorial board will review your portfolio and identity within <strong style={{ color: S.text }}>3–5 business days</strong>. You'll receive an email when your profile goes live on the marketplace.
+          </Body>
+          <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: '16px 20px', marginBottom: 28, textAlign: 'left' }}>
+            <Body style={{ fontSize: 12, lineHeight: 1.8 }}>
+              <strong style={{ color: S.text }}>While you wait:</strong> Your profile is set to <em style={{ color: '#fbbf24' }}>Under Review</em>. You can log in at any time — once approved you'll be live automatically.
+            </Body>
+          </div>
+          <Btn variant="gold" full onClick={onClose}>Back to Marketplace →</Btn>
+        </div>
+      </div>
+    )
+  }
 
   // ── Portfolio count indicator ──
   // FIX: minimum is now 3
@@ -185,26 +283,17 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
           {/* STEP 1 */}
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Inp label="Full Name *"        placeholder="e.g. Abena Kyei"           value={form.name}     onChange={(v: string) => f('name', v)} />
-              <Inp label="Email Address *"    placeholder="e.g. abena@email.com"       value={form.email}    onChange={(v: string) => f('email', v)} />
-
-              {/* Password with show/hide */}
-              <div>
-                <Lbl style={{ marginBottom: 8 }}>Password * <span style={{ color: S.textFaint, fontSize: 9 }}>(min 8 characters)</span></Lbl>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={form.showPassword ? 'text' : 'password'}
-                    placeholder="Create a strong password"
-                    value={form.password}
-                    onChange={e => f('password', e.target.value)}
-                    style={{ width: '100%', background: S.bgLow, border: `1px solid ${S.border}`, color: S.text, padding: '13px 48px 13px 16px', fontFamily: S.body, fontSize: 16, outline: 'none', boxSizing: 'border-box', borderRadius: S.radiusSm, minHeight: 46 }}
-                  />
-                  <button onClick={() => f('showPassword', !form.showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: S.textFaint, cursor: 'pointer', fontSize: 9, fontFamily: S.headline, letterSpacing: '0.1em', textTransform: 'uppercase', padding: 0 }}>
-                    {form.showPassword ? 'Hide' : 'Show'}
-                  </button>
+              {/* Email display — read-only, user is already authenticated */}
+              {user?.email && (
+                <div style={{ background: S.bgLow, border: `1px solid ${S.borderFaint}`, borderRadius: S.radiusSm, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ color: S.success, fontSize: 13 }}>✓</span>
+                  <div>
+                    <Lbl style={{ marginBottom: 2, fontSize: 8 }}>Signed in as</Lbl>
+                    <Body style={{ fontSize: 13, margin: 0, color: S.text }}>{user.email}</Body>
+                  </div>
                 </div>
-              </div>
-
+              )}
+              <Inp label="Full Name *"        placeholder="e.g. Abena Kyei"           value={form.name}     onChange={(v: string) => f('name', v)} />
               <Inp label="WhatsApp Number *"  placeholder="+233 XX XXX XXXX"           value={form.phone}    onChange={(v: string) => f('phone', v)} />
               <Inp label="Location *"         placeholder="e.g. Accra, East Legon"     value={form.location} onChange={(v: string) => f('location', v)} />
               <Sel
@@ -395,7 +484,16 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
             )}
             {step < 4
               ? <Btn variant="gold" onClick={handleContinue} full>Continue →</Btn>
-              : <Btn variant="gold" onClick={handleFinalSubmit} full>Submit Application →</Btn>
+              : (
+                <Btn
+                  variant="gold"
+                  onClick={handleFinalSubmit}
+                  disabled={submitting}
+                  full
+                >
+                  {submitting ? 'Submitting…' : 'Submit Application →'}
+                </Btn>
+              )
             }
           </div>
         </div>

@@ -2,7 +2,6 @@
 // After signup: calls /api/send-welcome-email to send branded welcome email.
 // This runs server-side via Vercel function so the API key is never exposed.
 
-// @ts-ignore
 import { supabase } from './supabase'
 
 export const upsertProfile = async (

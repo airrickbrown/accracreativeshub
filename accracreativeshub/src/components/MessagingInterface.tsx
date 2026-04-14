@@ -4,10 +4,10 @@ import React, { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { S, pct, fmt } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, Txt } from './UI'
 import { ORDERS, MESSAGES_DATA, DESIGNERS } from '../data/mockData'
-// @ts-ignore
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 import PresenceIndicator from './PresenceIndicator'
+import { ORDER_STATUS, STATUS_LABELS, STATUS_COLORS } from '../lib/orderStatus'
 
 
 interface Props { onClose: () => void; initialOrder?: any }
@@ -140,6 +140,8 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   const [submitting, setSubmitting]       = useState(false)
   const [isMobile, setIsMobile]           = useState(false)
   const [mobileView, setMobileView]       = useState<'list' | 'chat'>('list')
+  const [actionError, setActionError]     = useState('')
+  const [actionSuccess, setActionSuccess] = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef   = useRef<HTMLInputElement>(null)
@@ -208,9 +210,9 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }, [mapMsg])
 
   const sendMessage = useCallback(async (content: string, orderId: any, type = 'text', fileUrl?: string, fileName?: string) => {
-    if (!user) { alert('Please log in to send messages'); return }
+    if (!user) { setActionError('Please log in to send messages.'); return }
     const { error } = await supabase.from('messages').insert({ order_id: orderId, sender_id: user.id, content, message_type: type, file_url: fileUrl || null, file_name: fileName || null })
-    if (error) { console.error('Send error:', error); alert('Failed to send') }
+    if (error) { console.error('Send error:', error); setActionError('Message failed to send. Check your connection.') }
   }, [user?.id])
 
   const send = useCallback(async () => {
@@ -226,7 +228,7 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
     setUploading(true)
     const path = `messages/${activeOrder.id}/${Date.now()}.${file.name.split('.').pop()}`
     const { error: uploadError } = await supabase.storage.from('message-attachments').upload(path, file)
-    if (uploadError) { alert('Upload failed: ' + uploadError.message); setUploading(false); return }
+    if (uploadError) { setActionError('File upload failed: ' + uploadError.message); setUploading(false); return }
     const { data: urlData } = supabase.storage.from('message-attachments').getPublicUrl(path)
     await sendMessage(file.type.startsWith('image/') ? `[Image: ${file.name}]` : `[File: ${file.name}]`, activeOrder.id, file.type.startsWith('image/') ? 'image' : 'file', urlData?.publicUrl, file.name)
     setUploading(false)
@@ -239,13 +241,23 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }, [isMobile])
 
   const approveAndRelease = useCallback(async () => {
-    if (!user || isDesigner) { alert('Only the client can approve and release funds.'); return }
-    const { error } = await supabase.from('orders').update({ status: 'completed' }).eq('id', activeOrder.id).eq('client_id', user.id)
-    if (error) { alert(error.message); return }
-    setOrd((o: any) => ({ ...o, status: 'completed' }))
-    setOrders(prev => prev.map((o: any) => o.id === activeOrder.id ? { ...o, status: 'completed' } : o))
-    setMsgs(m => [...m, { from: 'system', text: 'Payment released. Order completed.' }])
+    if (!user || isDesigner) { setActionError('Only the client can approve and release funds.'); return }
+    const now = new Date().toISOString()
+    const { error } = await supabase.from('orders')
+      .update({ status: ORDER_STATUS.COMPLETED, approved_at: now, payout_status: 'pending_transfer' })
+      .eq('id', activeOrder.id)
+      .eq('client_id', user.id)
+    if (error) { setActionError(error.message); return }
+    setOrd((o: any) => ({ ...o, status: ORDER_STATUS.COMPLETED }))
+    setOrders(prev => prev.map((o: any) =>
+      o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.COMPLETED } : o
+    ))
+    setMsgs(m => [...m, {
+      id: `sys-${Date.now()}`, from: 'system',
+      text: 'Client approved the project. Payment has been queued for release to the designer.',
+    }])
     setShowReview(true)
+    setActionSuccess('Project approved. The designer will receive payment shortly.')
   }, [user?.id, isDesigner, activeOrder?.id])
 
   useEffect(() => { loadOrders() }, [user?.id])
@@ -279,10 +291,40 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
 
   const renderMessages = () => (
     <>
+      {/* Brief summary */}
       <div style={{ background: S.surface, borderLeft: `3px solid ${S.gold}`, padding: '12px 16px', marginBottom: 8 }}>
         <Lbl style={{ marginBottom: 6 }}>Brief</Lbl>
         <Body style={{ fontSize: 12, lineHeight: 1.7 }}>{ord.brief || 'No brief provided.'}</Body>
       </div>
+
+      {/* ── Designer: pending acceptance banner ── */}
+      {view === 'designer' && ord.status === ORDER_STATUS.PENDING && (
+        <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.22)', borderRadius: 8, padding: '14px 16px', marginBottom: 8 }}>
+          <Lbl style={{ marginBottom: 6, color: S.gold }}>New Brief Received</Lbl>
+          <Body style={{ fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
+            Review the project brief above and accept or decline. Only accept if you can deliver within the requested timeline.
+          </Body>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn variant="gold" size="sm" onClick={handleAcceptBrief} disabled={submitting}>✓ Accept Brief</Btn>
+            <Btn variant="ghost" size="sm" onClick={handleDeclineBrief} disabled={submitting}
+              style={{ borderColor: 'rgba(220,85,85,0.35)', color: S.danger }}>Decline</Btn>
+          </div>
+        </div>
+      )}
+
+      {/* ── Client: delivered — approval prompt ── */}
+      {view === 'client' && ord.status === ORDER_STATUS.DELIVERED && (
+        <div style={{ background: 'rgba(74,154,74,0.06)', border: '1px solid rgba(74,154,74,0.22)', borderRadius: 8, padding: '14px 16px', marginBottom: 8 }}>
+          <Lbl style={{ marginBottom: 6, color: S.success }}>Project Delivered</Lbl>
+          <Body style={{ fontSize: 12, lineHeight: 1.7, marginBottom: 10 }}>
+            The designer has marked this project as complete. Review the files in the chat and approve to release payment, or request a revision.
+          </Body>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn variant="success" size="sm" onClick={approveAndRelease} disabled={submitting}>✓ Approve & Release</Btn>
+            <Btn variant="outline" size="sm" onClick={handleRequestRevision} disabled={revLeft === 0 || submitting}>Request Revision ({revLeft} left)</Btn>
+          </div>
+        </div>
+      )}
       {msgs.map((m: any, i: number) => {
         const isMe = m.from === view
         if (m.from === 'system') return (
@@ -303,35 +345,159 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
     </>
   )
 
-  const renderActionBar = () => (
-    <div style={{ background: S.surface, padding: isMobile ? '10px 12px' : '12px 24px', borderBottom: `1px solid ${S.borderFaint}`, flexShrink: 0, overflowX: 'auto' }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', minWidth: isMobile ? 'max-content' : 'auto' }}>
-        <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Project</Lbl><Hl style={{ fontSize: 12 }}>{ord.project}</Hl></div>
-        <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Amount</Lbl><Hl style={{ color: S.gold, fontSize: 15 }}>{fmt(ord.amount)}</Hl></div>
-        <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Status</Lbl><Hl style={{ color: ['delivered','completed'].includes(ord.status) ? S.success : S.gold, fontSize: 11, textTransform: 'capitalize' }}>{String(ord.status).replace('_', ' ')}</Hl></div>
-        <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Deadline</Lbl><Hl style={{ fontSize: 11 }}>{ord.deadline}</Hl></div>
-        {view === 'client' && ord.status === 'in_progress' && (
-          <Btn variant="outline" size="sm" disabled={revLeft === 0} onClick={() => {
-            setOrd((o: any) => ({ ...o, revisions: { ...o.revisions, used: o.revisions.used + 1 } }))
-            setMsgs(m => [...m, { from: 'system', text: `Revision ${ord.revisions.used + 1} of ${ord.revisions.total} requested` }])
-          }}>Revision ({revLeft} left)</Btn>
+  // ── Accept brief (designer flow, Upwork-style) ───────────────────────────
+  const handleAcceptBrief = useCallback(async () => {
+    setSubmitting(true)
+    const { error } = await supabase.from('orders')
+      .update({ status: ORDER_STATUS.IN_PROGRESS })
+      .eq('id', activeOrder.id)
+    if (error) { setActionError(error.message); setSubmitting(false); return }
+    setOrd((o: any) => ({ ...o, status: ORDER_STATUS.IN_PROGRESS }))
+    setOrders(prev => prev.map((o: any) =>
+      o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.IN_PROGRESS } : o
+    ))
+    setMsgs(m => [...m, {
+      id: `sys-${Date.now()}`, from: 'system',
+      text: 'Brief accepted. Work has begun. The client has been notified.',
+    }])
+    setSubmitting(false)
+  }, [activeOrder?.id])
+
+  const handleDeclineBrief = useCallback(async () => {
+    setSubmitting(true)
+    const { error } = await supabase.from('orders')
+      .update({ status: ORDER_STATUS.DECLINED })
+      .eq('id', activeOrder.id)
+    if (error) { setActionError(error.message); setSubmitting(false); return }
+    setOrd((o: any) => ({ ...o, status: ORDER_STATUS.DECLINED }))
+    setOrders(prev => prev.map((o: any) =>
+      o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.DECLINED } : o
+    ))
+    setMsgs(m => [...m, {
+      id: `sys-${Date.now()}`, from: 'system',
+      text: 'Brief declined. The client has been notified and a refund will be processed.',
+    }])
+    setSubmitting(false)
+  }, [activeOrder?.id])
+
+  // ── Mark delivered (designer flow) ───────────────────────────────────────
+  const handleMarkDelivered = useCallback(async () => {
+    setSubmitting(true)
+    const now = new Date().toISOString()
+    const { error } = await supabase.from('orders')
+      .update({ status: ORDER_STATUS.DELIVERED, delivered_at: now })
+      .eq('id', activeOrder.id)
+    if (error) { setActionError(error.message); setSubmitting(false); return }
+    setOrd((o: any) => ({ ...o, status: ORDER_STATUS.DELIVERED }))
+    setOrders(prev => prev.map((o: any) =>
+      o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.DELIVERED } : o
+    ))
+    setMsgs(m => [...m, {
+      id: `sys-${Date.now()}`, from: 'system',
+      text: 'Project delivered. The client has 72 hours to approve or request revisions.',
+    }])
+    setSubmitting(false)
+  }, [activeOrder?.id])
+
+  // ── Request revision (client flow) ───────────────────────────────────────
+  const handleRequestRevision = useCallback(async () => {
+    if (revLeft <= 0) return
+    setSubmitting(true)
+    const newUsed = (ord.revisions?.used || 0) + 1
+    const { error } = await supabase.from('orders')
+      .update({ status: ORDER_STATUS.IN_PROGRESS, revisions_used: newUsed })
+      .eq('id', activeOrder.id)
+    if (error) { setActionError(error.message); setSubmitting(false); return }
+    setOrd((o: any) => ({ ...o, status: ORDER_STATUS.IN_PROGRESS, revisions: { ...o.revisions, used: newUsed } }))
+    setOrders(prev => prev.map((o: any) =>
+      o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.IN_PROGRESS } : o
+    ))
+    setMsgs(m => [...m, {
+      id: `sys-${Date.now()}`, from: 'system',
+      text: `Revision ${newUsed} of ${ord.revisions?.total || 3} requested. Designer has been notified.`,
+    }])
+    setSubmitting(false)
+  }, [activeOrder?.id, ord?.revisions, revLeft])
+
+  const renderActionBar = () => {
+    const statusColor = (STATUS_COLORS as any)[ord.status] || S.gold
+    const statusLabel = (STATUS_LABELS as any)[ord.status] || ord.status
+
+    return (
+      <div style={{ background: S.surface, padding: isMobile ? '10px 12px' : '12px 24px', borderBottom: `1px solid ${S.borderFaint}`, flexShrink: 0, overflowX: 'auto' }}>
+        {/* Status bar */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', minWidth: isMobile ? 'max-content' : 'auto' }}>
+          <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Project</Lbl><Hl style={{ fontSize: 12 }}>{ord.project}</Hl></div>
+          <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Amount</Lbl><Hl style={{ color: S.gold, fontSize: 15 }}>{fmt(ord.amount)}</Hl></div>
+          <div>
+            <Lbl style={{ marginBottom: 2, fontSize: 8 }}>Status</Lbl>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor, display: 'inline-block' }} />
+              <Hl style={{ color: statusColor, fontSize: 11 }}>{statusLabel}</Hl>
+            </div>
+          </div>
+          <div><Lbl style={{ marginBottom: 2, fontSize: 8 }}>Deadline</Lbl><Hl style={{ fontSize: 11 }}>{ord.deadline}</Hl></div>
+
+          {/* ── Designer: Accept / Decline pending brief ── */}
+          {view === 'designer' && ord.status === ORDER_STATUS.PENDING && (
+            <>
+              <Btn variant="gold" size="sm" onClick={handleAcceptBrief} disabled={submitting}>
+                ✓ Accept Brief
+              </Btn>
+              <Btn variant="ghost" size="sm" onClick={handleDeclineBrief} disabled={submitting}
+                style={{ borderColor: 'rgba(220,85,85,0.4)', color: S.danger }}>
+                Decline
+              </Btn>
+            </>
+          )}
+
+          {/* ── Client: Request revision ── */}
+          {view === 'client' && (ord.status === ORDER_STATUS.IN_PROGRESS || ord.status === ORDER_STATUS.DELIVERED) && (
+            <Btn
+              variant="outline" size="sm"
+              disabled={revLeft === 0 || submitting}
+              onClick={handleRequestRevision}
+            >
+              Revision ({revLeft} left)
+            </Btn>
+          )}
+
+          {/* ── Client: Approve & Release ── */}
+          {view === 'client' && ord.status === ORDER_STATUS.DELIVERED && (
+            <Btn variant="success" size="sm" onClick={approveAndRelease} disabled={submitting}>
+              ✓ Approve & Release
+            </Btn>
+          )}
+
+          {/* ── Designer: Mark Delivered ── */}
+          {view === 'designer' && ord.status === ORDER_STATUS.IN_PROGRESS && (
+            <Btn variant="gold" size="sm" onClick={handleMarkDelivered} disabled={submitting}>
+              Mark Delivered
+            </Btn>
+          )}
+
+          {/* ── Client: Raise dispute ── */}
+          {view === 'client' && (ord.status === ORDER_STATUS.IN_PROGRESS || ord.status === ORDER_STATUS.DELIVERED) && (
+            <Btn variant="danger" size="sm" onClick={() => setShowDispute(true)}>Dispute</Btn>
+          )}
+        </div>
+
+        {/* Inline action error / success banners */}
+        {actionError && (
+          <div style={{ marginTop: 8, background: 'rgba(220,85,85,0.08)', border: '1px solid rgba(220,85,85,0.2)', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Body style={{ fontSize: 12, color: S.danger, margin: 0 }}>{actionError}</Body>
+            <button onClick={() => setActionError('')} style={{ background: 'none', border: 'none', color: S.textFaint, cursor: 'pointer', fontSize: 14, padding: 0 }}>×</button>
+          </div>
         )}
-        {view === 'client' && ord.status === 'delivered' && (
-          <Btn variant="success" size="sm" onClick={approveAndRelease}>Approve & Release</Btn>
-        )}
-        {view === 'designer' && ord.status === 'in_progress' && (
-          <Btn variant="gold" size="sm" onClick={() => {
-            setOrd((o: any) => ({ ...o, status: 'delivered' }))
-            setOrders(prev => prev.map((o: any) => o.id === activeOrder.id ? { ...o, status: 'delivered' } : o))
-            setMsgs(m => [...m, { from: 'system', text: 'Project delivered. Client has 48 hours to approve.' }])
-          }}>Mark Delivered</Btn>
-        )}
-        {view === 'client' && ord.status === 'in_progress' && (
-          <Btn variant="danger" size="sm" onClick={() => setShowDispute(true)}>Dispute</Btn>
+        {actionSuccess && (
+          <div style={{ marginTop: 8, background: 'rgba(74,154,74,0.08)', border: '1px solid rgba(74,154,74,0.2)', borderRadius: 6, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Body style={{ fontSize: 12, color: S.success, margin: 0 }}>{actionSuccess}</Body>
+            <button onClick={() => setActionSuccess('')} style={{ background: 'none', border: 'none', color: S.textFaint, cursor: 'pointer', fontSize: 14, padding: 0 }}>×</button>
+          </div>
         )}
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: S.bgDeep, display: 'flex', flexDirection: 'column' }}>
@@ -350,10 +516,36 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <Btn variant="ghost" onClick={() => setShowReview(false)} full>Skip</Btn>
               <Btn variant="gold" onClick={async () => {
-                if (!reviewRating) { alert('Please select a rating'); return }
+                if (!reviewRating) { setActionError('Please select a star rating.'); return }
                 setSubmitting(true)
-                await supabase.from('reviews').insert({ order_id: activeOrder.id, client_id: user?.id, designer_id: activeOrder.designer_id, rating: reviewRating, comment: reviewComment })
-                setShowReview(false); setSubmitting(false); alert('Review submitted!')
+                try {
+                  // 1. Insert review
+                  await supabase.from('reviews').insert({
+                    order_id:    activeOrder.id,
+                    client_id:   user?.id,
+                    designer_id: activeOrder.designer_id,
+                    rating:      reviewRating,
+                    comment:     reviewComment.trim() || null,
+                  })
+                  // 2. Recalculate designer's average rating
+                  const { data: allRatings } = await supabase
+                    .from('reviews')
+                    .select('rating')
+                    .eq('designer_id', activeOrder.designer_id)
+                  if (allRatings && allRatings.length > 0) {
+                    const avg = allRatings.reduce((s: number, r: any) => s + r.rating, 0) / allRatings.length
+                    await supabase.from('designers').update({
+                      rating_average: Math.round(avg * 10) / 10,
+                      rating_count:   allRatings.length,
+                    }).eq('id', activeOrder.designer_id)
+                  }
+                  setShowReview(false)
+                  setActionSuccess('Review submitted. Thank you for your feedback.')
+                } catch (err: any) {
+                  setActionError('Failed to submit review. Please try again.')
+                } finally {
+                  setSubmitting(false)
+                }
               }} full disabled={submitting}>{submitting ? 'Submitting…' : 'Submit Review'}</Btn>
             </div>
           </div>
@@ -369,10 +561,44 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
             <Txt placeholder="Describe the issue clearly…" value={disputeReason} onChange={setDisputeReason} rows={4} />
             <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
               <Btn variant="ghost" onClick={() => setShowDispute(false)} full>Cancel</Btn>
-              <Btn variant="danger" onClick={() => {
-                setMsgs(m => [...m, { from: 'system', text: `Dispute raised: "${disputeReason}". Funds frozen.` }])
-                setShowDispute(false)
-              }} full>Submit</Btn>
+              <Btn variant="danger" onClick={async () => {
+                if (!disputeReason.trim()) { return }
+                setSubmitting(true)
+                try {
+                  // 1. Create dispute record
+                  await supabase.from('disputes').insert({
+                    order_id:     activeOrder.id,
+                    client:       user?.user_metadata?.full_name || user?.email || 'Client',
+                    client_email: user?.email || '',
+                    designer:     activeOrder.designer || '',
+                    project:      activeOrder.project  || '',
+                    amount:       activeOrder.amount   || 0,
+                    reason:       disputeReason.trim(),
+                    status:       'open',
+                    raised:       new Date().toLocaleDateString('en-GB'),
+                  })
+                  // 2. Update order status to disputed
+                  await supabase.from('orders')
+                    .update({ status: ORDER_STATUS.DISPUTED })
+                    .eq('id', activeOrder.id)
+                  // 3. Reflect in UI
+                  setOrd((o: any) => ({ ...o, status: ORDER_STATUS.DISPUTED }))
+                  setOrders(prev => prev.map((o: any) =>
+                    o.id === activeOrder.id ? { ...o, status: ORDER_STATUS.DISPUTED } : o
+                  ))
+                  setMsgs(m => [...m, {
+                    id: `sys-${Date.now()}`, from: 'system',
+                    text: `Dispute raised. Funds are frozen pending admin review. Our team will respond within 24–48 hours.`,
+                  }])
+                  setShowDispute(false)
+                  setDisputeReason('')
+                  setActionSuccess('Dispute submitted. Our team will review it within 24–48 hours.')
+                } catch (err: any) {
+                  setActionError('Failed to submit dispute. Please try again.')
+                } finally {
+                  setSubmitting(false)
+                }
+              }} full disabled={submitting}>{submitting ? 'Submitting…' : 'Submit Dispute'}</Btn>
             </div>
           </div>
         </div>

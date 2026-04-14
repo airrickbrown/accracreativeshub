@@ -3,24 +3,26 @@
 // and the welcome page now shows correctly based on role.
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-// @ts-ignore
 import { supabase } from './lib/supabase'
 
 interface AuthContextType {
-  user:          any
-  userRole:      'admin' | 'designer' | 'client' | null
-  isAdmin:       boolean
-  isDesigner:    boolean
-  isClient:      boolean
-  emailVerified: boolean
-  loading:       boolean
-  signOut:       () => Promise<void>
-  refreshUser:   () => Promise<void>
+  user:             any
+  userRole:         'admin' | 'designer' | 'client' | null
+  isAdmin:          boolean
+  isDesigner:       boolean
+  isClient:         boolean
+  emailVerified:    boolean
+  loading:          boolean
+  justVerified:     boolean       // true for one render cycle after email verification
+  clearJustVerified: () => void   // call after consuming the flag
+  signOut:          () => Promise<void>
+  refreshUser:      () => Promise<void>
 }
 
 const Ctx = createContext<AuthContextType>({
   user: null, userRole: null, isAdmin: false, isDesigner: false,
   isClient: false, emailVerified: false, loading: true,
+  justVerified: false, clearJustVerified: () => {},
   signOut: async () => {}, refreshUser: async () => {},
 })
 
@@ -72,18 +74,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
           await processUser(session.user)
 
-          // Check if this is a fresh verification (not just a normal login)
+          // Check if this is a fresh verification (not just a normal login).
+          // We detect it by looking at the URL hash that Supabase appends on
+          // email-confirmation redirects (#access_token=... or ?type=signup).
+          const isVerificationCallback =
+            window.location.hash.includes('access_token') ||
+            window.location.search.includes('type=signup') ||
+            window.location.search.includes('type=recovery')
+
           const role = await fetchRole(session.user.id, session.user.user_metadata?.role || 'client')
 
-          // Redirect to correct welcome page based on role
-          if (role === 'designer') {
-            window.history.replaceState({}, '', '/apply-designer')
-          } else if (role === 'client') {
-            window.history.replaceState({}, '', '/welcome')
+          if (isVerificationCallback) {
+            // Use pushState (not replaceState) so that the popstate listener
+            // in App.tsx fires and re-evaluates currentPath.
+            if (role === 'designer') {
+              window.history.pushState({ overlay: true }, '', '/apply-designer')
+            } else {
+              window.history.pushState({ overlay: true }, '', '/welcome')
+            }
+            // Dispatch popstate so App.tsx picks up the new pathname
+            window.dispatchEvent(new PopStateEvent('popstate'))
+            setJustVerified(true)
           }
-
-          // Signal that a fresh verification just happened
-          setJustVerified(true)
         }
 
         if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
@@ -104,9 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.history.replaceState({}, '', '/')
   }
 
+  const clearJustVerified = useCallback(() => setJustVerified(false), [])
+
   return (
     <Ctx.Provider value={{
-      user, userRole, emailVerified, loading, signOut, refreshUser,
+      user, userRole, emailVerified, loading,
+      justVerified, clearJustVerified,
+      signOut, refreshUser,
       isAdmin:    userRole === 'admin',
       isDesigner: userRole === 'designer',
       isClient:   !!user && !['admin', 'designer'].includes(userRole || ''),
