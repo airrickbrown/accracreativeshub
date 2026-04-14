@@ -275,6 +275,15 @@ export default function DesignerAgreementPage({ onClose }: Props) {
               are displayed in your designer dashboard.
             </P>
           </Clause>
+          <Clause n="4.6" title="Independent Contractor Status &amp; Tax Obligations">
+            <P>
+              The designer agrees they are an independent contractor and not an employee, agent, or
+              partner of Accra Creatives Hub. The designer is solely responsible for their tax
+              obligations under Ghana Revenue Authority requirements, including income tax filing
+              and any applicable VAT registration. Accra Creatives Hub does not withhold or remit
+              taxes on behalf of designers.
+            </P>
+          </Clause>
         </Section>
 
         {/* 5. Account, Suspension & Termination */}

@@ -581,12 +581,13 @@ export default function App() {
             <div>
               <Lbl style={{ marginBottom: 16 }}>Company</Lbl>
               {[
-                { label: 'About',                 fn: () => openOverlay(() => setShowAbout(true))             },
-                { label: 'Contact Us',            fn: () => openOverlay(() => setShowContact(true))           },
-                { label: 'Terms',                 fn: () => openOverlay(() => setShowTerms(true))             },
-                { label: 'Privacy Policy',        fn: () => openOverlay(() => setShowPrivacy(true))           },
-                { label: 'Payments & Disputes',   fn: () => openOverlay(() => setShowPayments(true))          },
-                { label: 'Designer Agreement',    fn: () => openOverlay(() => setShowDesignerAgreement(true)) },
+                { label: 'About',                   fn: () => openOverlay(() => setShowAbout(true))             },
+                { label: 'Contact Us',              fn: () => openOverlay(() => setShowContact(true))           },
+                { label: 'Terms',                   fn: () => openOverlay(() => setShowTerms(true))             },
+                { label: 'Privacy Policy',          fn: () => openOverlay(() => setShowPrivacy(true))           },
+                { label: 'Payments & Disputes',     fn: () => openOverlay(() => setShowPayments(true))          },
+                { label: 'Designer Agreement',      fn: () => openOverlay(() => setShowDesignerAgreement(true)) },
+                { label: 'Acceptable Use Policy',   fn: () => openOverlay(() => setShowTerms(true))             },
               ].map(l => (
                 <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}

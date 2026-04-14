@@ -174,6 +174,14 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               applicable taxes where legally required.
             </Body>
           </Clause>
+          <Clause n="3.6" title="Paystack as Payment Custodian">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              All payments are processed through Paystack, a licensed payment service provider. Client
+              funds are held by Paystack until the client approves delivery. Accra Creatives Hub does not
+              hold client funds directly. Paystack's own terms of service govern the custody and release
+              of these funds.
+            </Body>
+          </Clause>
         </Section>
 
         {/* 4. Refunds */}
@@ -243,6 +251,15 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               Court of Ghana.
             </Body>
           </Clause>
+          <Clause n="5.4" title="Dispute Window">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              Disputes must be raised within 48 hours of delivery notification through the Platform's
+              messaging interface. Our team will review the project brief, submission, and communication
+              logs. Decisions by our dispute resolution team are final within the Platform, subject to
+              the arbitration rights in clause 5.3. For unresolved disputes, the parties agree to submit
+              to the jurisdiction of the courts of Ghana.
+            </Body>
+          </Clause>
         </Section>
 
         {/* 6. User Conduct */}
@@ -299,6 +316,14 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               law. Unauthorised reproduction is prohibited.
             </Body>
           </Clause>
+          <Clause n="7.3" title="IP Transfer on Completion">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              Upon full payment and project completion, all intellectual property rights in the
+              commissioned work transfer to the client. The designer retains the right to display
+              the completed work in their portfolio unless the client requests confidentiality in
+              writing.
+            </Body>
+          </Clause>
         </Section>
 
         {/* 8. Liability */}
@@ -323,6 +348,14 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               profits; data loss; service interruptions caused by third-party infrastructure (including
               payment processors or hosting providers); or Force Majeure events including acts of God,
               strikes, or government action.
+            </Body>
+          </Clause>
+          <Clause n="8.4" title="Transaction-Based Liability Limit">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              To the maximum extent permitted under Ghana law, Accra Creatives Hub shall not be liable
+              for any indirect, incidental, or consequential damages arising from use of the Platform.
+              Our total liability for any claim shall not exceed the amount paid for the specific
+              transaction giving rise to the claim.
             </Body>
           </Clause>
         </Section>
@@ -360,6 +393,49 @@ export default function TermsPage({ onClose }: TermsPageProps) {
               through the Platform's payment workflow will be handled in accordance with the dispute
               resolution process in Section 5. The Platform
               may terminate accounts immediately for serious violations of these Terms without prior notice.
+            </Body>
+          </Clause>
+        </Section>
+
+        {/* 11. Platform Role */}
+        <Section title="11. Platform Role">
+          <Clause n="11.1" title="Marketplace Only">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              Accra Creatives Hub is a marketplace platform only. We do not provide design services.
+              All designers on this platform are independent contractors. Accra Creatives Hub is not
+              responsible for the quality, delivery, or outcome of any design work.
+            </Body>
+          </Clause>
+        </Section>
+
+        {/* 12. Acceptable Use Policy */}
+        <Section title="12. Acceptable Use Policy">
+          <Clause n="12.1" title="Prohibited Uses">
+            <Body style={{ fontSize: 13, lineHeight: 1.9, marginBottom: 8 }}>
+              Users may not use this platform to:
+            </Body>
+            <ul style={{ paddingLeft: 20 }}>
+              {[
+                'Submit false or misleading information.',
+                'Infringe on intellectual property rights.',
+                'Engage in fraudulent transactions.',
+                'Harass or abuse other users.',
+                'Violate any applicable Ghanaian law.',
+              ].map((item, i) => (
+                <li key={i} style={{ marginBottom: 8 }}>
+                  <Body style={{ fontSize: 13, lineHeight: 1.8, margin: 0 }}>{item}</Body>
+                </li>
+              ))}
+            </ul>
+          </Clause>
+        </Section>
+
+        {/* 13. Governing Law */}
+        <Section title="13. Governing Law">
+          <Clause n="13.1" title="Jurisdiction">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              These Terms are governed by the laws of the Republic of Ghana. Any disputes shall be
+              resolved under Ghanaian jurisdiction.
             </Body>
           </Clause>
         </Section>

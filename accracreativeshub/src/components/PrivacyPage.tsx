@@ -163,6 +163,12 @@ export default function PrivacyPage({ onClose }: Props = {}) {
               security.
             </Body>
           </Clause>
+          <Clause n="1.4" title="Summary of Data Collected">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              We collect: your name, email address, payment information (processed and held by
+              Paystack), project briefs, and communications on the Platform.
+            </Body>
+          </Clause>
         </Section>
 
         <Section title="2. How We Use Your Information">
@@ -211,6 +217,14 @@ export default function PrivacyPage({ onClose }: Props = {}) {
               We seek to handle personal data in accordance with the Data Protection Act,
               2012 (Act 843) of Ghana, together with any applicable regulations and
               guidelines.
+            </Body>
+          </Clause>
+          <Clause n="3.3" title="Data Protection Commission">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              Accra Creatives Hub complies with the Data Protection Act, 2012 (Act 843) of
+              Ghana. We are registered with the Data Protection Commission of Ghana. We collect
+              only the data necessary to operate the Platform and do not sell user data to
+              third parties.
             </Body>
           </Clause>
         </Section>
@@ -337,6 +351,14 @@ export default function PrivacyPage({ onClose }: Props = {}) {
             <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
               You may opt out of promotional communications by using the unsubscribe link
               in our emails or by contacting us directly.
+            </Body>
+          </Clause>
+          <Clause n="9.4" title="Rights under Act 843">
+            <Body style={{ fontSize: 13, lineHeight: 1.9 }}>
+              Under the Data Protection Act, 2012 (Act 843), you have the right to access,
+              correct, or request deletion of your personal data. To exercise these rights,
+              contact us at{' '}
+              <strong style={{ color: S.text }}>hello@accracreativeshub.com</strong>.
             </Body>
           </Clause>
         </Section>
