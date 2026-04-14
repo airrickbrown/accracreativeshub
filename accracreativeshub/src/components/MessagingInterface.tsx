@@ -519,6 +519,17 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
                 if (!reviewRating) { setActionError('Please select a star rating.'); return }
                 setSubmitting(true)
                 try {
+                  // Guard: prevent duplicate review for same order
+                  const { data: existing } = await supabase
+                    .from('reviews')
+                    .select('id')
+                    .eq('order_id', activeOrder.id)
+                    .maybeSingle()
+                  if (existing) {
+                    setShowReview(false)
+                    setActionError('You have already reviewed this order.')
+                    return
+                  }
                   // 1. Insert review
                   await supabase.from('reviews').insert({
                     order_id:    activeOrder.id,

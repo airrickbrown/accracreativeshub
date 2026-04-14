@@ -139,8 +139,9 @@ export default function DesignerSignup({ onClose }: DesignerSignupProps) {
           .from('id-uploads')
           .upload(path, form.idFile, { upsert: true })
         if (!idErr) {
-          const { data: urlData } = supabase.storage.from('id-uploads').getPublicUrl(path)
-          idUrl = urlData.publicUrl
+          // Store ONLY the storage path — never a public URL.
+          // Admins access this via createSignedUrl() on the private bucket.
+          idUrl = path
         } else {
           console.warn('ID upload error (bucket may not exist):', idErr.message)
         }

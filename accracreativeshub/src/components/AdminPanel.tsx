@@ -51,7 +51,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [disputes, setDisputes]             = useState<Dispute[]>(DISPUTES_DATA.map(toDispute))
   const [isMobile, setIsMobile]             = useState(false)
   const [confirm, setConfirm]               = useState<ConfirmConfig | null>(null)
-  const [reviewingDesigner, setReviewingDesigner] = useState<any>(null)
+  const [reviewingDesigner, setReviewingDesigner]     = useState<any>(null)
+  const [reviewingIdSignedUrl, setReviewingIdSignedUrl] = useState<string | null>(null)
   const [featuredDesigners, setFeaturedDesigners] = useState<any[]>([])
   const [featuredLoading, setFeaturedLoading]     = useState(false)
   const [revenueTotal, setRevenueTotal]           = useState<number | null>(null)
@@ -239,6 +240,22 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     addToast('info', 'Application rejected.')
   }
 
+  // Open review modal + generate a 1-hour signed URL for the private ID document
+  const openReviewModal = async (app: any) => {
+    setReviewingDesigner(app)
+    setReviewingIdSignedUrl(null)
+    if (app.idUrl) {
+      const { data, error } = await supabase.storage
+        .from('id-uploads')
+        .createSignedUrl(app.idUrl, 3600)
+      if (!error && data?.signedUrl) {
+        setReviewingIdSignedUrl(data.signedUrl)
+      } else if (error) {
+        console.warn('Failed to generate signed URL for ID document:', error.message)
+      }
+    }
+  }
+
   // ── Dispute actions ───────────────────────────────────────────────────────
 
   const handleRelease = (d: Dispute) => {
@@ -406,7 +423,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   <Hl style={{ fontSize: isMobile ? 22 : 32, fontWeight: 300 }}>{reviewingDesigner.name}</Hl>
                   <Body style={{ fontSize: 12, marginTop: 4 }}>{reviewingDesigner.category} · {reviewingDesigner.location} · Applied {reviewingDesigner.appliedAt}</Body>
                 </div>
-                <Btn variant="ghost" onClick={() => setReviewingDesigner(null)}>✕ Close</Btn>
+                <Btn variant="ghost" onClick={() => { setReviewingDesigner(null); setReviewingIdSignedUrl(null) }}>✕ Close</Btn>
               </div>
 
               {/* Portfolio grid */}
@@ -427,35 +444,44 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </div>
               )}
 
-              {/* ID document */}
-              {reviewingDesigner.idUrl ? (
-                <div style={{ marginBottom: 24 }}>
-                  <Lbl style={{ marginBottom: 10 }}>Identity Document</Lbl>
-                  <a href={reviewingDesigner.idUrl} target="_blank" rel="noreferrer">
-                    <img src={reviewingDesigner.idUrl} alt="ID document" style={{ maxWidth: 360, width: '100%', border: `1px solid ${S.border}` }} />
+              {/* ID document — accessed via signed URL from private bucket only */}
+              <div style={{ marginBottom: 24 }}>
+                <Lbl style={{ marginBottom: 10 }}>Identity Document</Lbl>
+                {reviewingDesigner.idUrl && !reviewingIdSignedUrl && (
+                  <Body style={{ fontSize: 12, color: S.textMuted }}>Generating secure access link…</Body>
+                )}
+                {reviewingIdSignedUrl ? (
+                  <a href={reviewingIdSignedUrl} target="_blank" rel="noreferrer">
+                    <img
+                      src={reviewingIdSignedUrl}
+                      alt="ID document"
+                      style={{ maxWidth: 360, width: '100%', border: `1px solid ${S.border}` }}
+                    />
                   </a>
-                </div>
-              ) : (
-                <div style={{ background: 'rgba(220,85,85,0.07)', border: '1px solid rgba(220,85,85,0.25)', padding: '12px 16px', marginBottom: 24 }}>
-                  <Body style={{ fontSize: 12, color: S.danger }}>⚠ No ID document uploaded.</Body>
-                </div>
-              )}
+                ) : !reviewingDesigner.idUrl ? (
+                  <div style={{ background: 'rgba(220,85,85,0.07)', border: '1px solid rgba(220,85,85,0.25)', padding: '12px 16px' }}>
+                    <Body style={{ fontSize: 12, color: S.danger }}>⚠ No ID document uploaded.</Body>
+                  </div>
+                ) : null}
+              </div>
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 8, borderTop: `1px solid ${S.borderFaint}` }}>
                 <Btn variant="success" onClick={() => {
                   approveDesigner(reviewingDesigner.id)
                   setReviewingDesigner(null)
+                  setReviewingIdSignedUrl(null)
                 }}>
                   ✓ Approve Designer
                 </Btn>
                 <Btn variant="danger" onClick={() => {
                   rejectDesigner(reviewingDesigner.id)
                   setReviewingDesigner(null)
+                  setReviewingIdSignedUrl(null)
                 }}>
                   ✕ Reject Application
                 </Btn>
-                <Btn variant="ghost" onClick={() => setReviewingDesigner(null)}>Cancel</Btn>
+                <Btn variant="ghost" onClick={() => { setReviewingDesigner(null); setReviewingIdSignedUrl(null) }}>Cancel</Btn>
               </div>
             </div>
           </div>
@@ -490,7 +516,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Btn variant="gold" size="sm" onClick={() => setReviewingDesigner(a)}>Review Portfolio</Btn>
+                  <Btn variant="gold" size="sm" onClick={() => openReviewModal(a)}>Review Portfolio</Btn>
                   <Btn variant="danger"  size="sm" onClick={() => rejectDesigner(a.id)}>Reject</Btn>
                   <Btn variant="success" size="sm" onClick={() => approveDesigner(a.id)}>Approve</Btn>
                 </div>

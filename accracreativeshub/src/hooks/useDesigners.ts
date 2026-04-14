@@ -43,17 +43,20 @@ export function useDesigners() {
             id,
             badge,
             verified,
+            featured,
             public_visible,
             rating_average,
             rating_count,
             price_min,
+            response_time,
             category,
             portfolio_urls,
             profiles:id (
               full_name,
               location,
               avatar_url,
-              bio
+              bio,
+              tagline
             )
           `)
           .eq('public_visible', true)
@@ -65,17 +68,17 @@ export function useDesigners() {
         const shaped = (data || []).map((d: any) => ({
           id:           d.id,
           name:         d.profiles?.full_name  || 'Unknown Designer',
-          tagline:      d.profiles?.bio         || '',
+          tagline:      d.profiles?.tagline    || d.profiles?.bio || '',
           category:     d.category              || '',
           location:     d.profiles?.location    || 'Accra, Ghana',
           rating:       d.rating_average        || 0,
           reviews:      d.rating_count          || 0,
           orders:       0,
           price:        d.price_min             || 0,
-          responseTime: '< 4 hours',
+          responseTime: d.response_time         || '< 4 hours',
           tags:         [],
           badge:        d.badge                 || 'new',
-          featured:     false,
+          featured:     d.featured              || false,
           verified:     d.verified              || false,
           portrait:     d.profiles?.avatar_url  || `https://picsum.photos/seed/${d.id}/400/500`,
           portfolio:    d.portfolio_urls        || [],
