@@ -71,7 +71,6 @@ export default function App() {
   const [briefDesigner, setBriefDesigner]       = useState<any>(null)
   const [showChat, setShowChat]                 = useState(false)
   const [showSignup, setShowSignup]             = useState(false)
-  const [showAdmin, setShowAdmin]               = useState(false)
   const [showAnalytics, setShowAnalytics]       = useState<any>(null)
   const [showAuth, setShowAuth]                 = useState(false)
   const [authConfig, setAuthConfig]             = useState<AuthConfig>(DEFAULT_AUTH)
@@ -128,7 +127,7 @@ export default function App() {
   // ── closeAll ONLY touches overlay state, never auth state ──
   const closeAll = useCallback(() => {
     setSelectedDesigner(null); setBriefDesigner(null)
-    setShowSignup(false);      setShowAdmin(false)
+    setShowSignup(false);
     setShowChat(false);        setShowAuth(false)
     setShowAnalytics(null);    setShowResume(null)
     setShowTerms(false);       setShowPrivacy(false)
