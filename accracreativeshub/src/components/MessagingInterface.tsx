@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { S, pct, fmt } from '../styles/tokens'
 import { Btn, Hl, Body, Lbl, Txt } from './UI'
-import { ORDERS, MESSAGES_DATA, DESIGNERS } from '../data/mockData'
+import { DESIGNERS } from '../data/mockData'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 import PresenceIndicator from './PresenceIndicator'
@@ -91,7 +91,16 @@ const ConversationList = memo(({ orders, activeOrder, loading, isMobile, onSelec
     </div>
     <div style={{ overflowY: 'auto', flex: 1 }}>
       {loading && <Body style={{ padding: 20, fontSize: 12 }}>Loading…</Body>}
-      {!loading && orders.map((o: any) => (
+      {!loading && orders.length === 0 && (
+        <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 28, marginBottom: 14, opacity: 0.25 }}>💬</div>
+          <Body style={{ fontSize: 13, marginBottom: 8, color: S.textMuted }}>No conversations yet</Body>
+          <Body style={{ fontSize: 11, color: S.textFaint, lineHeight: 1.7 }}>
+            Conversations appear here once you place or receive an order.
+          </Body>
+        </div>
+      )}
+      {!loading && orders.length > 0 && orders.map((o: any) => (
         <div
           key={o.id}
           onClick={() => onSelect(o)}
@@ -125,12 +134,12 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   const { user, isDesigner } = useAuth()
   const view = isDesigner ? 'designer' : 'client'
 
-  const [orders, setOrders]               = useState<any[]>(ORDERS)
+  const [orders, setOrders]               = useState<any[]>([])
   const [ordersLoading, setOL]            = useState(true)
-  const [activeOrder, setActiveOrder]     = useState<any>(ORDERS[0])
-  const [msgs, setMsgs]                   = useState<any[]>(MESSAGES_DATA[ORDERS[0]?.id] || [])
+  const [activeOrder, setActiveOrder]     = useState<any>(null)
+  const [msgs, setMsgs]                   = useState<any[]>([])
   const [input, setInput]                 = useState('')
-  const [ord, setOrd]                     = useState<any>({ ...ORDERS[0] })
+  const [ord, setOrd]                     = useState<any>(null)
   const [uploading, setUploading]         = useState(false)
   const [showReview, setShowReview]       = useState(false)
   const [showDispute, setShowDispute]     = useState(false)
@@ -186,15 +195,18 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }), [user?.id, view])
 
   const loadOrders = useCallback(async () => {
-    if (!user) { setOrders(ORDERS); setActiveOrder(ORDERS[0]); setOrd({ ...ORDERS[0] }); setOL(false); return }
+    if (!user) { setOrders([]); setActiveOrder(null); setOrd(null); setOL(false); return }
     setOL(true)
     const { data, error } = await supabase.from('orders')
       .select('*, profiles:client_id(full_name), designers:designer_id(category)')
       .or(`client_id.eq.${user.id},designer_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
 
-    if (error || !data?.length) {
-      setOrders(ORDERS); setActiveOrder(ORDERS[0]); setOrd({ ...ORDERS[0] })
+    if (error) {
+      console.error('loadOrders error:', error.message)
+      setOrders([]); setActiveOrder(null); setOrd(null)
+    } else if (!data?.length) {
+      setOrders([]); setActiveOrder(null); setOrd(null)
     } else {
       const mapped = data.map(normalizeOrder)
       setOrders(mapped)
@@ -205,8 +217,8 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
 
   const loadMessages = useCallback(async (orderId: any) => {
     const { data, error } = await supabase.from('messages').select('*').eq('order_id', orderId).order('created_at', { ascending: true })
-    if (error || !data?.length) { setMsgs(MESSAGES_DATA[Number(orderId)] || []); return }
-    setMsgs(data.map(mapMsg))
+    if (error) { console.error('loadMessages error:', error.message); setMsgs([]); return }
+    setMsgs(data?.length ? data.map(mapMsg) : [])
   }, [mapMsg])
 
   const sendMessage = useCallback(async (content: string, orderId: any, type = 'text', fileUrl?: string, fileName?: string) => {
@@ -289,7 +301,9 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs])
 
-  const renderMessages = () => (
+  const renderMessages = () => {
+    if (!ord) return null
+    return (
     <>
       {/* Brief summary */}
       <div style={{ background: S.surface, borderLeft: `3px solid ${S.gold}`, padding: '12px 16px', marginBottom: 8 }}>
@@ -344,13 +358,16 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
       <div ref={bottomRef} />
     </>
   )
+  }
 
   // ── Accept brief (designer flow, Upwork-style) ───────────────────────────
   const handleAcceptBrief = useCallback(async () => {
+    if (!user) return
     setSubmitting(true)
     const { error } = await supabase.from('orders')
       .update({ status: ORDER_STATUS.IN_PROGRESS })
       .eq('id', activeOrder.id)
+      .eq('designer_id', user.id)
     if (error) { setActionError(error.message); setSubmitting(false); return }
     setOrd((o: any) => ({ ...o, status: ORDER_STATUS.IN_PROGRESS }))
     setOrders(prev => prev.map((o: any) =>
@@ -364,10 +381,12 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }, [activeOrder?.id])
 
   const handleDeclineBrief = useCallback(async () => {
+    if (!user) return
     setSubmitting(true)
     const { error } = await supabase.from('orders')
       .update({ status: ORDER_STATUS.DECLINED })
       .eq('id', activeOrder.id)
+      .eq('designer_id', user.id)
     if (error) { setActionError(error.message); setSubmitting(false); return }
     setOrd((o: any) => ({ ...o, status: ORDER_STATUS.DECLINED }))
     setOrders(prev => prev.map((o: any) =>
@@ -382,11 +401,13 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
 
   // ── Mark delivered (designer flow) ───────────────────────────────────────
   const handleMarkDelivered = useCallback(async () => {
+    if (!user) return
     setSubmitting(true)
     const now = new Date().toISOString()
     const { error } = await supabase.from('orders')
       .update({ status: ORDER_STATUS.DELIVERED, delivered_at: now })
       .eq('id', activeOrder.id)
+      .eq('designer_id', user.id)
     if (error) { setActionError(error.message); setSubmitting(false); return }
     setOrd((o: any) => ({ ...o, status: ORDER_STATUS.DELIVERED }))
     setOrders(prev => prev.map((o: any) =>
@@ -401,12 +422,13 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
 
   // ── Request revision (client flow) ───────────────────────────────────────
   const handleRequestRevision = useCallback(async () => {
-    if (revLeft <= 0) return
+    if (revLeft <= 0 || !user) return
     setSubmitting(true)
     const newUsed = (ord.revisions?.used || 0) + 1
     const { error } = await supabase.from('orders')
       .update({ status: ORDER_STATUS.IN_PROGRESS, revisions_used: newUsed })
       .eq('id', activeOrder.id)
+      .eq('client_id', user.id)
     if (error) { setActionError(error.message); setSubmitting(false); return }
     setOrd((o: any) => ({ ...o, status: ORDER_STATUS.IN_PROGRESS, revisions: { ...o.revisions, used: newUsed } }))
     setOrders(prev => prev.map((o: any) =>
@@ -420,6 +442,7 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
   }, [activeOrder?.id, ord?.revisions, revLeft])
 
   const renderActionBar = () => {
+    if (!ord) return null
     const statusColor = (STATUS_COLORS as any)[ord.status] || S.gold
     const statusLabel = (STATUS_LABELS as any)[ord.status] || ord.status
 
@@ -652,26 +675,38 @@ export default function MessagingInterface({ onClose, initialOrder }: Props) {
             <ConversationList orders={orders} activeOrder={activeOrder} loading={ordersLoading} isMobile={isMobile} onSelect={selectOrder} />
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <div style={{ background: S.bg, padding: '14px 24px', borderBottom: `1px solid ${S.borderFaint}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${S.gold}40` }}>
-                <img src={activeOrder?.designerObj?.portrait} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(100%)' }} />
+            {!activeOrder ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <div style={{ fontSize: 28, opacity: 0.2 }}>💬</div>
+                <Body style={{ color: S.textMuted, fontSize: 13 }}>No conversations yet</Body>
+                <Body style={{ fontSize: 11, color: S.textFaint, textAlign: 'center', lineHeight: 1.7, maxWidth: 260 }}>
+                  Your conversations will appear here once you place or receive an order.
+                </Body>
               </div>
-              <div>
-                <Hl style={{ fontSize: 15, fontWeight: 600 }}>{activeOrder?.designer}</Hl>
-                <Lbl style={{ marginBottom: 0, fontSize: 8 }}>{activeOrder?.designerObj?.category}</Lbl>
-                <PresenceIndicator userId={activeOrder?.designer_id} showLabel style={{ marginTop: 4 }} />
-              </div>
-              <div style={{ marginLeft: 'auto', padding: '4px 10px', background: view === 'designer' ? 'rgba(201,168,76,0.08)' : 'rgba(74,154,74,0.08)', border: `1px solid ${view === 'designer' ? 'rgba(201,168,76,0.2)' : 'rgba(74,154,74,0.2)'}`, borderRadius: 6 }}>
-                <Lbl style={{ margin: 0, fontSize: 8, color: view === 'designer' ? S.gold : S.success }}>
-                  {view === 'designer' ? '◈ Designer' : '◉ Client'}
-                </Lbl>
-              </div>
-            </div>
-            {renderActionBar()}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {renderMessages()}
-            </div>
-            <MessageInput value={input} uploading={uploading} view={view} onChange={setInput} onSend={send} onFileClick={() => fileRef.current?.click()} fileRef={fileRef} onFileChange={handleFileChange} isMobile={isMobile} />
+            ) : (
+              <>
+                <div style={{ background: S.bg, padding: '14px 24px', borderBottom: `1px solid ${S.borderFaint}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${S.gold}40` }}>
+                    <img src={activeOrder?.designerObj?.portrait} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(100%)' }} />
+                  </div>
+                  <div>
+                    <Hl style={{ fontSize: 15, fontWeight: 600 }}>{activeOrder?.designer}</Hl>
+                    <Lbl style={{ marginBottom: 0, fontSize: 8 }}>{activeOrder?.designerObj?.category}</Lbl>
+                    <PresenceIndicator userId={activeOrder?.designer_id} showLabel style={{ marginTop: 4 }} />
+                  </div>
+                  <div style={{ marginLeft: 'auto', padding: '4px 10px', background: view === 'designer' ? 'rgba(201,168,76,0.08)' : 'rgba(74,154,74,0.08)', border: `1px solid ${view === 'designer' ? 'rgba(201,168,76,0.2)' : 'rgba(74,154,74,0.2)'}`, borderRadius: 6 }}>
+                    <Lbl style={{ margin: 0, fontSize: 8, color: view === 'designer' ? S.gold : S.success }}>
+                      {view === 'designer' ? '◈ Designer' : '◉ Client'}
+                    </Lbl>
+                  </div>
+                </div>
+                {renderActionBar()}
+                <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {renderMessages()}
+                </div>
+                <MessageInput value={input} uploading={uploading} view={view} onChange={setInput} onSend={send} onFileClick={() => fileRef.current?.click()} fileRef={fileRef} onFileChange={handleFileChange} isMobile={isMobile} />
+              </>
+            )}
           </div>
         </div>
       )}

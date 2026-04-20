@@ -31,6 +31,7 @@ import AboutPage from './components/AboutPage'
 import AdminRoute from './components/AdminRoute'
 import { Btn, Hl, Body, Lbl, GoldLine } from './components/UI'
 import { useDesigners } from './hooks/useDesigners'
+import { useSessionTimeout } from './hooks/useSessionTimeout'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './AuthContext'
 import { supabase } from './lib/supabase'
@@ -38,6 +39,8 @@ import { COPY } from './lib/copy'
 import { useOwnPresence } from './components/PresenceIndicator'
 import { HelpButton, NotFoundPage} from './components/LoadingSpinner'
 import CookieBanner from './components/CookieBanner'
+import DeleteAccountModal from './components/DeleteAccountModal'
+import SignedOutPage from './components/SignedOutPage'
 
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -79,7 +82,8 @@ export default function App() {
   const [showDesignerAgreement, setShowDesignerAgreement] = useState(false)
   const [showContact, setShowContact]           = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showSignedOut, setShowSignedOut]               = useState(false)
+  const [showDeleteAccount, setShowDeleteAccount]     = useState(false)
   // null = not yet loaded, false = not accepted (show modal), true = accepted
   const [agreementAccepted, setAgreementAccepted] = useState<boolean | null>(null)
   const [showWelcome, setShowWelcome]           = useState(false)
@@ -88,7 +92,7 @@ export default function App() {
   useOwnPresence()
 
   // ── Auth state from context — NEVER modified by overlay logic ──
-  const { user, signOut, isAdmin, isDesigner, isClient, justVerified, clearJustVerified } = useAuth()
+  const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
@@ -123,23 +127,19 @@ export default function App() {
     setShowTerms(false);       setShowPrivacy(false)
     setShowPayments(false);    setShowDesignerAgreement(false)
     setShowContact(false);     setShowAbout(false)
-    setShowLogoutConfirm(false)
+    setShowSignedOut(false); setShowDeleteAccount(false)
     setShowWelcome(false);     setShowDesignerWelcome(false)
     setAuthConfig(DEFAULT_AUTH)
   }, [])
 
-  const handleLogout   = useCallback(() => setShowLogoutConfirm(true), [])
-  const confirmLogout  = useCallback(async () => {
-    setShowLogoutConfirm(false); closeAll()
-    await signOut()
-    window.history.replaceState({}, '', '/'); setCurrentPath('/')
+  const handleLogout = useCallback(() => {
+    closeAll()           // dismiss all overlays first — no dashboard flash
+    setShowSignedOut(true)
+    signOut()            // async; clears session, storage, realtime in bg
   }, [closeAll, signOut])
 
-  useEffect(() => {
-    const onChange = () => setCurrentPath(window.location.pathname)
-    window.addEventListener('popstate', onChange)
-    return () => window.removeEventListener('popstate', onChange)
-  }, [])
+  // ── Inactivity session timeout ──
+  useSessionTimeout({ onTimeout: handleLogout, enabled: !!user })
 
   // ── Post-verification welcome redirect ──
   // Fires once when justVerified flips true (email link clicked).
@@ -155,6 +155,18 @@ export default function App() {
   }, [justVerified, isDesigner, isClient, clearJustVerified, openOverlay])
 
   useEffect(() => {
+    if (currentPath === '/signup' && !user) {
+      openAuth('signup', 'client', undefined)
+      window.history.replaceState({}, '', '/')
+      setCurrentPath('/')
+      return
+    }
+    if (currentPath === '/login' && !user) {
+      openAuth('login', 'client', undefined)
+      window.history.replaceState({}, '', '/')
+      setCurrentPath('/')
+      return
+    }
     if (currentPath === '/welcome' && user && isClient) {
       setShowWelcome(true)
       return
@@ -217,7 +229,8 @@ export default function App() {
     onHowItWorks:   () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
     onLogin:        () => openAuth('login', 'client'),
-    onSignOut:      handleLogout,
+    onSignOut:        handleLogout,
+    onDeleteAccount:  () => openOverlay(() => setShowDeleteAccount(true)),
   }
 
   return (
@@ -262,24 +275,25 @@ export default function App() {
         <DesignerAgreementModal onAccept={() => setAgreementAccepted(true)} />
       )}
 
-      {/* ── Logout confirmation ── */}
-      {showLogoutConfirm && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: S.surface, border: `1px solid ${S.border}`, padding: '32px 28px', maxWidth: 360, width: '100%', borderRadius: S.radiusLg, textAlign: 'center' }}>
-            <Hl style={{ fontSize: 20, marginBottom: 10 }}>Sign out?</Hl>
-            <Body style={{ fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>Are you sure you want to sign out of Accra Creatives Hub?</Body>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Btn variant="ghost" full onClick={() => setShowLogoutConfirm(false)}>Cancel</Btn>
-              {/* Red sign out button in confirmation too */}
-              <button
-                onClick={confirmLogout}
-                style={{ flex: 1, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#ef4444', fontFamily: S.headline, fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 700, padding: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={(e: any) => (e.currentTarget.style.background = 'rgba(239,68,68,0.2)')}
-                onMouseLeave={(e: any) => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
-              >Sign Out</button>
-            </div>
-          </div>
-        </div>
+      {/* ── Signed out page ── */}
+      {showSignedOut && (
+        <SignedOutPage
+          onLogin={() => { setShowSignedOut(false); openAuth('login', 'client') }}
+          onHomepage={() => setShowSignedOut(false)}
+        />
+      )}
+
+      {/* ── Delete account ── */}
+      {showDeleteAccount && user && (
+        <DeleteAccountModal
+          userName={user.user_metadata?.full_name || user.email}
+          onClose={() => setShowDeleteAccount(false)}
+          onConfirm={async (name) => {
+            await deleteAccount(name)
+            setShowDeleteAccount(false)
+            closeAll()
+          }}
+        />
       )}
 
       {/* ── Overlays ── */}

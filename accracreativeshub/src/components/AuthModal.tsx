@@ -156,7 +156,7 @@ export default function AuthModal({
     if (!rl.allowed) { setError(`Too many signups. Wait ${formatRetryTime(rl.retryAfterMs!)}.`); return }
     setLoading(true); setError(''); setSuccess('')
     try {
-      await signUpUser({
+      const result = await signUpUser({
         email:    form.email.trim().toLowerCase(),
         password: form.password,
         fullName: form.fullName.trim(),
@@ -164,10 +164,11 @@ export default function AuthModal({
       })
       setPending(form.email)
       setSuccess(`Account created! Check ${form.email.trim()} (including spam) for a verification link.`)
+      // Surface any non-fatal designer setup warning
+      if (result.designerWarning) setError(result.designerWarning)
     } catch (err: any) {
-      setError(err?.message?.includes('already')
-        ? 'An account with this email already exists. Please log in.'
-        : 'Signup failed. Please try again.')
+      // Pass through the real error — signUpUser already maps Supabase codes to clean messages
+      setError(err?.message || 'Signup failed. Please try again.')
     }
     setLoading(false)
   }

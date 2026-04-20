@@ -17,13 +17,14 @@ interface AuthContextType {
   clearJustVerified: () => void   // call after consuming the flag
   signOut:          () => Promise<void>
   refreshUser:      () => Promise<void>
+  deleteAccount:    (name?: string) => Promise<void>
 }
 
 const Ctx = createContext<AuthContextType>({
   user: null, userRole: null, isAdmin: false, isDesigner: false,
   isClient: false, emailVerified: false, loading: true,
   justVerified: false, clearJustVerified: () => {},
-  signOut: async () => {}, refreshUser: async () => {},
+  signOut: async () => {}, refreshUser: async () => {}, deleteAccount: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -68,40 +69,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: string, session: any) => {
 
-        // ── Email verification completed ──
-        // When user clicks verification link, event is SIGNED_IN
-        // and email_confirmed_at is now set
-        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-          await processUser(session.user)
-
-          // Check if this is a fresh verification (not just a normal login).
-          // We detect it by looking at the URL hash that Supabase appends on
-          // email-confirmation redirects (#access_token=... or ?type=signup).
-          const isVerificationCallback =
-            window.location.hash.includes('access_token') ||
-            window.location.search.includes('type=signup') ||
-            window.location.search.includes('type=recovery')
-
-          const role = await fetchRole(session.user.id, session.user.user_metadata?.role || 'client')
-
-          if (isVerificationCallback) {
-            // Use pushState (not replaceState) so that the popstate listener
-            // in App.tsx fires and re-evaluates currentPath.
-            if (role === 'designer') {
-              window.history.pushState({ overlay: true }, '', '/apply-designer')
-            } else {
-              window.history.pushState({ overlay: true }, '', '/welcome')
-            }
-            // Dispatch popstate so App.tsx picks up the new pathname
-            window.dispatchEvent(new PopStateEvent('popstate'))
-            setJustVerified(true)
-          }
-        }
-
         if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
+          // processUser once per event — fetches role and sets all auth state
           await processUser(session?.user ?? null)
+
+          // ── Detect fresh email verification ──────────────────────────────
+          // We cannot rely on URL hash inspection: Supabase JS strips the
+          // #access_token fragment synchronously during client init, before
+          // any async code (including this callback) ever runs.
+          //
+          // Instead, signUpUser() stores the pending email in localStorage.
+          // We check it here and clear it on first match so it only fires once,
+          // even if the verification link opens in a different tab or browser.
+          if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+            try {
+              const pendingEmail = localStorage.getItem('ach_verifying')
+              if (pendingEmail && pendingEmail === session.user.email?.toLowerCase()) {
+                // Confirm recency — email_confirmed_at must be within the last 15 minutes
+                const confirmedMs = new Date(session.user.email_confirmed_at).getTime()
+                if (Date.now() - confirmedMs < 15 * 60 * 1000) {
+                  localStorage.removeItem('ach_verifying')
+                  // Clean the URL (remove any leftover Supabase query params)
+                  window.history.replaceState({}, '', '/')
+                  // Signal App.tsx to show the role-appropriate welcome overlay.
+                  // Role is already set in state by processUser above.
+                  setJustVerified(true)
+                }
+              }
+            } catch { /* localStorage unavailable — skip verification detection */ }
+          }
+
         } else if (event === 'SIGNED_OUT') {
           setUser(null); setUserRole(null); setVerified(false)
+          try { localStorage.removeItem('ach_verifying') } catch { /* ignore */ }
         }
         setLoading(false)
       }
@@ -111,7 +111,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [processUser])
 
   const signOut = async () => {
+    // Nuke all realtime subscriptions before clearing session
+    try { await supabase.removeAllChannels() } catch { /* ignore */ }
     await supabase.auth.signOut()
+    setUser(null); setUserRole(null); setVerified(false)
+    // Clear all ACH auth keys from storage
+    try {
+      localStorage.removeItem('ach_verifying')
+      localStorage.removeItem('ach_last_activity')
+      sessionStorage.removeItem('ach_adm_ok')
+    } catch { /* ignore */ }
+    window.history.replaceState({}, '', '/')
+  }
+
+  // Calls the server-side delete-account function which uses the service role key
+  // to anonymize profile data and delete the auth user, then clears local session.
+  const deleteAccount = async (name?: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const res = await fetch('/api/delete-account', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ name }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Account deletion failed. Please contact support.')
+    }
+
+    // Auth user is now deleted server-side. Clear local session gracefully.
+    await supabase.auth.signOut().catch(() => {})
     setUser(null); setUserRole(null); setVerified(false)
     window.history.replaceState({}, '', '/')
   }
@@ -122,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <Ctx.Provider value={{
       user, userRole, emailVerified, loading,
       justVerified, clearJustVerified,
-      signOut, refreshUser,
+      signOut, refreshUser, deleteAccount,
       isAdmin:    userRole === 'admin',
       isDesigner: userRole === 'designer',
       isClient:   !!user && !['admin', 'designer'].includes(userRole || ''),
