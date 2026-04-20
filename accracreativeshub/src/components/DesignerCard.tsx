@@ -11,103 +11,19 @@ interface DesignerCardProps {
 export default function DesignerCard({ designer, onView, onHire }: DesignerCardProps) {
   const [hov, setHov] = useState(false)
 
-  const trustBadge = designer.verified ? (
-    <div
-      title="Verified by Accra Creatives Hub"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        background: 'rgba(8,8,8,0.78)',
-        border: `1px solid rgba(201,168,76,0.28)`,
-        padding: '5px 9px',
-        borderRadius: 999,
-        backdropFilter: 'blur(8px)',
-      }}
-    >
-      <span
-        style={{
-          width: 16,
-          height: 16,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '50%',
-          background: S.gold,
-          color: S.onPrimary,
-          fontSize: 10,
-          fontWeight: 900,
-          lineHeight: 1,
-          flexShrink: 0,
-        }}
-      >
-        ✓
-      </span>
-      <span
-        style={{
-          color: S.gold,
-          fontSize: 8,
-          fontFamily: S.body,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-          fontWeight: 700,
-        }}
-      >
-        Verified
-      </span>
-    </div>
-  ) : (
-    <div
-      title="Awaiting review"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        background: 'rgba(8,8,8,0.78)',
-        border: `1px solid ${S.borderFaint}`,
-        padding: '5px 9px',
-        borderRadius: 999,
-        backdropFilter: 'blur(8px)',
-      }}
-    >
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          background: S.textFaint,
-          flexShrink: 0,
-          opacity: 0.9,
-        }}
-      />
-      <span
-        style={{
-          color: S.textFaint,
-          fontSize: 8,
-          fontFamily: S.body,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-          fontWeight: 700,
-        }}
-      >
-        Under Review
-      </span>
-    </div>
-  )
-
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         background: S.surface,
-        border: `1px solid ${hov ? S.gold : S.borderFaint}`,
+        border: `1px solid ${hov ? 'rgba(201,168,76,0.45)' : S.borderFaint}`,
+        borderRadius: S.radiusMd,
+        overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'all 0.3s',
-        transform: hov ? 'translateY(-6px)' : 'none',
-        boxShadow: hov ? '0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,166,70,0.08)' : 'none',
+        transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s',
+        transform: hov ? 'translateY(-4px)' : 'none',
+        boxShadow: hov ? '0 16px 40px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.2)',
       }}
     >
       <div style={{ position: 'relative', height: 260, overflow: 'hidden', background: designer.color }}>
@@ -121,52 +37,38 @@ export default function DesignerCard({ designer, onView, onHire }: DesignerCardP
             objectFit: 'cover',
             objectPosition: 'top',
             filter: 'grayscale(100%)',
-            opacity: hov ? 0.85 : 0.7,
-            transition: 'all 0.4s',
-            transform: hov ? 'scale(1.04)' : 'scale(1)',
+            opacity: hov ? 0.9 : 0.75,
+            transition: 'opacity 0.35s, transform 0.35s',
+            transform: hov ? 'scale(1.03)' : 'scale(1)',
           }}
         />
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to top,rgba(19,19,19,0.95) 0%,transparent 50%)',
+            background: 'linear-gradient(to top, rgba(19,19,19,0.9) 0%, transparent 55%)',
           }}
         />
 
-        {/* Top badges */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            right: 10,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-          }}
-        >
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {designer.featured && (
-              <div
-                style={{
-                  background: S.gold,
-                  color: S.onPrimary,
-                  fontSize: 7,
-                  fontWeight: 800,
-                  letterSpacing: '0.2em',
-                  padding: '3px 8px',
-                  fontFamily: S.body,
-                  borderRadius: 999,
-                }}
-              >
-                FEATURED
-              </div>
-            )}
+        {/* Top-left: featured badge only */}
+        {designer.featured && (
+          <div style={{ position: 'absolute', top: 10, left: 10 }}>
+            <div
+              style={{
+                background: S.gold,
+                color: S.onPrimary,
+                fontSize: 7,
+                fontWeight: 800,
+                letterSpacing: '0.2em',
+                padding: '3px 8px',
+                fontFamily: S.body,
+                borderRadius: 999,
+              }}
+            >
+              FEATURED
+            </div>
           </div>
-
-          {trustBadge}
-        </div>
+        )}
 
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -201,6 +103,7 @@ export default function DesignerCard({ designer, onView, onHire }: DesignerCardP
                 textTransform: 'uppercase',
                 fontFamily: S.body,
                 border: `1px solid ${S.borderFaint}`,
+                borderRadius: 4,
               }}
             >
               {t}

@@ -35,10 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [justVerified, setJustVerified] = useState(false)
 
   const fetchRole = async (userId: string, fallback = 'client'): Promise<string> => {
-    try {
-      const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
-      return data?.role || fallback
-    } catch { return fallback }
+    const { data, error } = await supabase.from('profiles').select('role').eq('id', userId).single()
+    if (error) {
+      // Surface DB errors (e.g. RLS recursion) instead of silently masking them
+      console.error('[fetchRole] profiles query failed:', error.message)
+      return fallback
+    }
+    return data?.role || fallback
   }
 
   const processUser = useCallback(async (u: any) => {
