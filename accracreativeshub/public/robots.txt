@@ -1,5 +1,17 @@
 User-agent: *
 Allow: /
+
+# Protected and authenticated routes — must not be indexed
+Disallow: /admin
 Disallow: /admin-sovereign-2024
+Disallow: /login
+Disallow: /signup
+Disallow: /messages
+Disallow: /dashboard
+Disallow: /orders
+Disallow: /apply-designer
+Disallow: /welcome
+Disallow: /api/
+Disallow: /auth/
 
 Sitemap: https://www.accracreativeshub.com/sitemap.xml

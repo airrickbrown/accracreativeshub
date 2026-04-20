@@ -41,6 +41,7 @@ import { HelpButton, NotFoundPage} from './components/LoadingSpinner'
 import CookieBanner from './components/CookieBanner'
 import DeleteAccountModal from './components/DeleteAccountModal'
 import SignedOutPage from './components/SignedOutPage'
+import CategoryPage, { CATEGORY_SLUGS } from './components/CategoryPage'
 
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -92,7 +93,7 @@ export default function App() {
   useOwnPresence()
 
   // ── Auth state from context — NEVER modified by overlay logic ──
-  const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified } = useAuth()
+  const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified, loading: authLoading } = useAuth()
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
@@ -154,6 +155,18 @@ export default function App() {
     }
   }, [justVerified, isDesigner, isClient, clearJustVerified, openOverlay])
 
+  // Show welcome overlay for new Google OAuth users after they select their role
+  useEffect(() => {
+    if (authLoading || !user) return
+    try {
+      const googleNew = localStorage.getItem('ach_google_new')
+      if (!googleNew) return
+      localStorage.removeItem('ach_google_new')
+      if (googleNew === 'designer') openOverlay(() => setShowDesignerWelcome(true))
+      else openOverlay(() => setShowWelcome(true))
+    } catch { /* ignore */ }
+  }, [authLoading, user, openOverlay])
+
   useEffect(() => {
     if (currentPath === '/signup' && !user) {
       openAuth('signup', 'client', undefined)
@@ -208,6 +221,28 @@ export default function App() {
       window.removeEventListener('popstate', onPopState)
     }
   }, [closeAll])
+
+  // ── Google OAuth callback ──
+  if (currentPath === '/auth/callback') {
+    return (
+      <AuthCallback
+        onDone={() => { window.history.replaceState({}, '', '/'); setCurrentPath('/') }}
+      />
+    )
+  }
+
+  // ── SEO category landing pages (/designers/logo-design, etc.) ──
+  if (currentPath.startsWith('/designers/')) {
+    const slug = currentPath.replace('/designers/', '').replace(/\/$/, '')
+    if (slug && CATEGORY_SLUGS[slug]) {
+      return (
+        <CategoryPage
+          slug={slug}
+          onBack={() => { window.history.replaceState({}, '', '/'); setCurrentPath('/') }}
+        />
+      )
+    }
+  }
 
   if (currentPath === '/admin' || currentPath === '/admin-sovereign-2024') {
     return <AdminRoute onClose={() => { window.history.replaceState({}, '', '/'); setCurrentPath('/') }} />
@@ -267,8 +302,6 @@ export default function App() {
           .hero-buttons{flex-direction:column!important;align-items:stretch!important;}
         }
       `}</style>
-
-      <AuthCallback />
 
       {/* ── Designer Agreement Gate (z=500 — blocks all other overlays) ── */}
       {user && isDesigner && agreementAccepted === false && (
@@ -460,6 +493,46 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* ── Browse by Category ── */}
+      <section id="categories" aria-labelledby="categories-heading" style={{ padding: '72px 40px', background: S.bgLow, borderBottom: `1px solid ${S.borderFaint}` }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ marginBottom: 36 }}>
+            <Lbl style={{ marginBottom: 10 }}>All Design Services</Lbl>
+            <h2 id="categories-heading" style={{ fontFamily: S.headline, fontWeight: 300, fontSize: 'clamp(22px,3vw,36px)', color: S.text, margin: 0 }}>
+              Browse Designers by Category
+            </h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10 }}>
+            {([
+              { slug: 'logo-design',         label: 'Logo Design',          icon: '◈', desc: 'Brand marks & wordmarks' },
+              { slug: 'branding',             label: 'Business Branding',    icon: '▣', desc: 'Full identity systems'   },
+              { slug: 'flyer-design',         label: 'Flyer Design',         icon: '◉', desc: 'Print & digital flyers'  },
+              { slug: 'social-media-design',  label: 'Social Media Design',  icon: '◐', desc: 'Posts, banners & covers' },
+              { slug: 'ui-ux-design',         label: 'UI/UX Design',         icon: '◑', desc: 'Apps & web interfaces'   },
+              { slug: 'motion-graphics',      label: 'Motion Graphics',      icon: '◒', desc: 'Animation & video'       },
+            ] as const).map(({ slug, label, icon, desc }) => (
+              <a
+                key={slug}
+                href={`/designers/${slug}`}
+                onClick={e => {
+                  e.preventDefault()
+                  window.history.pushState({}, '', `/designers/${slug}`)
+                  setCurrentPath(`/designers/${slug}`)
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 8, background: S.surface, border: `1px solid ${S.borderFaint}`, borderRadius: 12, padding: '20px 18px', textDecoration: 'none', transition: 'border-color 0.2s, background 0.2s', cursor: 'pointer' }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(201,168,76,0.45)'; el.style.background = 'rgba(201,168,76,0.03)' }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = S.borderFaint; el.style.background = S.surface }}
+              >
+                <span style={{ fontSize: 22, color: S.gold, lineHeight: 1, opacity: 0.75 }}>{icon}</span>
+                <span style={{ fontFamily: S.headline, fontSize: 13, fontWeight: 600, color: S.text, lineHeight: 1.25 }}>{label}</span>
+                <span style={{ fontFamily: S.body, fontSize: 11, color: S.textFaint, lineHeight: 1.4 }}>{desc}</span>
+                <span style={{ fontFamily: S.body, fontSize: 11, color: S.gold, marginTop: 4 }}>Browse →</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Marketplace ── */}
       <section id="marketplace" style={{ padding: '96px 40px' }}>

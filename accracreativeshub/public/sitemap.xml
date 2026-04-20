@@ -1,44 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- Home -->
+  <!-- ══════════════════════════════════════════
+       TIER 1 — Homepage
+  ══════════════════════════════════════════ -->
+
   <url>
     <loc>https://www.accracreativeshub.com/</loc>
-    <lastmod>2026-04-13</lastmod>
+    <lastmod>2026-04-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- Browse Designers (marketplace section) -->
+  <!-- ══════════════════════════════════════════
+       TIER 2 — Category landing pages
+       Primary keyword targets per page:
+         logo-design        → "logo designers ghana" / "logo design accra"
+         branding           → "branding designers ghana" / "brand identity accra"
+         flyer-design       → "flyer designers ghana" / "flyer design accra"
+         social-media-design→ "social media designers ghana"
+         ui-ux-design       → "ui ux designers ghana" / "app designers accra"
+         motion-graphics    → "motion graphics designers ghana"
+  ══════════════════════════════════════════ -->
+
   <url>
-    <loc>https://www.accracreativeshub.com/browse</loc>
-    <lastmod>2026-04-13</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://www.accracreativeshub.com/designers/logo-design</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://www.accracreativeshub.com/designers/branding</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://www.accracreativeshub.com/designers/flyer-design</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
-  <!-- How It Works -->
   <url>
-    <loc>https://www.accracreativeshub.com/how-it-works</loc>
-    <lastmod>2026-04-13</lastmod>
+    <loc>https://www.accracreativeshub.com/designers/social-media-design</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.accracreativeshub.com/designers/ui-ux-design</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.accracreativeshub.com/designers/motion-graphics</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ══════════════════════════════════════════
+       TIER 3 — Static content
+  ══════════════════════════════════════════ -->
+
+  <url>
+    <loc>https://www.accracreativeshub.com/about</loc>
+    <lastmod>2026-04-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
-  <!-- Contact -->
   <url>
     <loc>https://www.accracreativeshub.com/contact</loc>
-    <lastmod>2026-04-13</lastmod>
+    <lastmod>2026-04-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Login -->
   <url>
-    <loc>https://www.accracreativeshub.com/login</loc>
-    <lastmod>2026-04-13</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.accracreativeshub.com/terms</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
+
+  <url>
+    <loc>https://www.accracreativeshub.com/privacy</loc>
+    <lastmod>2026-04-20</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- INTENTIONALLY EXCLUDED (noindex pages):
+       /login /signup /admin /messages /dashboard /orders
+       Auth and protected pages must not appear in Google. -->
 
 </urlset>

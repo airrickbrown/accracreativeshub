@@ -5,48 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Accra Creatives Hub — Ghana's Curated Design Marketplace</title>
     <meta name="description" content="Hire verified Ghanaian graphic designers for logos, branding, flyers, social media design and more. Secure escrow payments. Curated talent reviewed by our editorial team." />
-    <meta name="keywords" content="graphic designer accra, hire designer ghana, logo design ghana, branding accra, flyer design ghana, social media design ghana, ghanaian designers, accra creatives hub" />
+    <meta name="keywords" content="graphic designer ghana, hire designer accra, logo designer ghana, branding designer accra, flyer design ghana, social media design ghana, ghanaian graphic designers, african designers" />
     <meta name="author" content="Accra Creatives Hub" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://www.accracreativeshub.com/" />
+
+    <!-- Open Graph — all URLs must use canonical www -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://accracreativeshub.com" />
+    <meta property="og:url" content="https://www.accracreativeshub.com/" />
     <meta property="og:title" content="Accra Creatives Hub — Ghana's Curated Design Marketplace" />
-    <meta property="og:description" content="Hire verified Ghanaian graphic designers for logos, branding, flyers and more. Secure payments. Curated talent only." />
-    <meta property="og:image" content="https://accracreativeshub.com/og-image.jpg" />
+    <meta property="og:description" content="Hire verified Ghanaian graphic designers for logos, branding, flyers and more. Secure escrow payments. Curated talent only." />
+    <meta property="og:image" content="https://www.accracreativeshub.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Accra Creatives Hub — Ghana's Curated Design Marketplace" />
     <meta property="og:locale" content="en_GH" />
     <meta property="og:site_name" content="Accra Creatives Hub" />
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://accracreativeshub.com" />
+    <meta name="twitter:site" content="@accracreativeshub" />
+    <meta name="twitter:url" content="https://www.accracreativeshub.com/" />
     <meta name="twitter:title" content="Accra Creatives Hub — Ghana's Curated Design Marketplace" />
     <meta name="twitter:description" content="Hire verified Ghanaian graphic designers for logos, branding, flyers and more." />
-    <meta name="twitter:image" content="https://accracreativeshub.com/og-image.jpg" />
+    <meta name="twitter:image" content="https://www.accracreativeshub.com/og-image.jpg" />
+
+    <!-- WebSite schema with SearchAction -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Accra Creatives Hub",
-      "url": "https://accracreativeshub.com",
+      "url": "https://www.accracreativeshub.com",
       "description": "Ghana's curated marketplace connecting clients with verified graphic designers.",
+      "inLanguage": "en-GH",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://accracreativeshub.com/?search={search_term_string}",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://www.accracreativeshub.com/?search={search_term_string}"
+        },
         "query-input": "required name=search_term_string"
       }
     }
     </script>
+
+    <!-- Organization + LocalBusiness schema -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
+      "@type": ["Organization", "LocalBusiness"],
       "name": "Accra Creatives Hub",
-      "url": "https://accracreativeshub.com",
-      "logo": "https://accracreativeshub.com/logo.svg",
-      "description": "A curated design marketplace based in Accra, Ghana.",
+      "url": "https://www.accracreativeshub.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.accracreativeshub.com/logo.svg",
+        "width": 200,
+        "height": 60
+      },
+      "image": "https://www.accracreativeshub.com/og-image.jpg",
+      "description": "A curated graphic design marketplace based in Accra, Ghana. Verified designers for logos, branding, flyers, UI/UX, and motion graphics.",
+      "priceRange": "$$",
+      "currenciesAccepted": "GHS",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Accra",
+        "addressRegion": "Greater Accra",
         "addressCountry": "GH"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 5.6037,
+        "longitude": -0.1870
+      },
+      "areaServed": [
+        { "@type": "Country", "name": "Ghana" },
+        { "@type": "City", "name": "Accra" },
+        { "@type": "City", "name": "Kumasi" }
+      ],
+      "knowsAbout": [
+        "Graphic Design", "Logo Design", "Brand Identity", "Flyer Design",
+        "Social Media Design", "UI/UX Design", "Motion Graphics", "Business Branding"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "hello@accracreativeshub.com",
+        "availableLanguage": "English"
       },
       "sameAs": [
         "https://twitter.com/accracreativeshub",
@@ -55,10 +100,42 @@
       ]
     }
     </script>
+
+    <!-- Marketplace / Service schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "name": "Graphic Design Marketplace — Ghana",
+      "serviceType": "Graphic Design Services",
+      "provider": {
+        "@type": "Organization",
+        "name": "Accra Creatives Hub",
+        "url": "https://www.accracreativeshub.com"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Ghana"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Design Services",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Logo Design" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Business Branding" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Flyer Design" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Social Media Design" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "UI/UX Design" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Motion Graphics" } }
+        ]
+      }
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
 
-    <!-- ── Fonts ── -->
+    <!-- Fonts — preconnect before stylesheet to reduce render-blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -66,7 +143,7 @@
       rel="stylesheet"
     />
 
-    <!-- ── Prevent flash of unstyled content ── -->
+    <!-- Prevent flash of unstyled content -->
     <style>
       html, body, #root { background: #0a0a0a; margin: 0; padding: 0; }
       body { font-family: 'Manrope', Arial, sans-serif; }

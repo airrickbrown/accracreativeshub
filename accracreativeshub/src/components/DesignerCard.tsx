@@ -113,7 +113,8 @@ export default function DesignerCard({ designer, onView, onHire }: DesignerCardP
       <div style={{ position: 'relative', height: 260, overflow: 'hidden', background: designer.color }}>
         <img
           src={designer.portrait}
-          alt={designer.name}
+          alt={`${designer.name} — ${designer.category} designer in Ghana`}
+          loading="lazy"
           style={{
             width: '100%',
             height: '100%',
