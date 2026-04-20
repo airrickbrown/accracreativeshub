@@ -209,8 +209,8 @@ export default function App() {
     }
   }, [closeAll])
 
-  if (currentPath === '/admin-sovereign-2024') {
-    return <AdminRoute onClose={() => { window.history.pushState({}, '', '/'); setCurrentPath('/') }} />
+  if (currentPath === '/admin' || currentPath === '/admin-sovereign-2024') {
+    return <AdminRoute onClose={() => { window.history.replaceState({}, '', '/'); setCurrentPath('/') }} />
   }
 
   const filtered = activeDesigners.filter((d: any) => {
@@ -222,7 +222,7 @@ export default function App() {
   // ── navProps is stable — auth values come from context, not state ──
   const navProps = {
     scrolled, user, isAdmin, isDesigner, isClient,
-    onAdmin:        isAdmin ? () => openOverlay(() => setShowAdmin(true)) : () => {},
+    onAdmin:        isAdmin ? () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') } : () => {},
     onSignup:       openDesignerFlow,
     onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client'),
     onMarketplace:  () => { window.scrollTo({ top: 0, behavior: 'smooth' }) },
@@ -324,7 +324,7 @@ export default function App() {
           lockRole={authConfig.lockRole}
         />
       )}
-      {showAdmin && isAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
+      {/* showAdmin is now unreachable — onAdmin navigates to /admin path which renders AdminRoute above */}
       {showAnalytics && isAdmin && <DesignerDashboard designer={showAnalytics} onClose={() => setShowAnalytics(null)} />}
       {briefDesigner && (
         <BriefBuilder
@@ -608,7 +608,7 @@ export default function App() {
                 { label: 'Marketplace',  fn: () => scrollTo('marketplace')  },
                 { label: 'How It Works', fn: () => scrollTo('how-it-works') },
                 { label: 'Messages',     fn: () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client') },
-                ...(isAdmin ? [{ label: 'Admin Panel', fn: () => openOverlay(() => setShowAdmin(true)) }] : []),
+                ...(isAdmin ? [{ label: 'Admin Panel', fn: () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') } }] : []),
               ].map(l => (
                 <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}
