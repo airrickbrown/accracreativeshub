@@ -94,10 +94,16 @@ export default function App() {
 
   // ── Auth state from context — NEVER modified by overlay logic ──
   const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified, loading: authLoading } = useAuth()
+
+  // Admin nav visibility is driven by email so it works even when DB role
+  // lookup is degraded (e.g. RLS issues). AdminRoute enforces the real gate.
+  const isEmailAdmin = user?.email === 'airrickbrown@gmail.com'
+  const showAdmin    = isAdmin || isEmailAdmin
+
   const { designers: realDesigners } = useDesigners()
   const activeDesigners = realDesigners.length > 0 ? realDesigners : DESIGNERS
 
-  const showForDesigners = !user || isDesigner || isAdmin
+  const showForDesigners = !user || isDesigner || showAdmin
 
   const openOverlay = useCallback((fn: () => void) => {
     window.history.pushState({ overlay: true }, '')
@@ -256,8 +262,8 @@ export default function App() {
 
   // ── navProps is stable — auth values come from context, not state ──
   const navProps = {
-    scrolled, user, isAdmin, isDesigner, isClient,
-    onAdmin:        isAdmin ? () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') } : () => {},
+    scrolled, user, isAdmin: showAdmin, isDesigner, isClient,
+    onAdmin:        () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') },
     onSignup:       openDesignerFlow,
     onMessages:     () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client'),
     onMarketplace:  () => { window.scrollTo({ top: 0, behavior: 'smooth' }) },
@@ -358,7 +364,7 @@ export default function App() {
         />
       )}
       {/* showAdmin is now unreachable — onAdmin navigates to /admin path which renders AdminRoute above */}
-      {showAnalytics && isAdmin && <DesignerDashboard designer={showAnalytics} onClose={() => setShowAnalytics(null)} />}
+      {showAnalytics && showAdmin && <DesignerDashboard designer={showAnalytics} onClose={() => setShowAnalytics(null)} />}
       {briefDesigner && (
         <BriefBuilder
           designer={briefDesigner}
@@ -387,7 +393,7 @@ export default function App() {
           onResume={d => { setSelectedDesigner(null); openOverlay(() => setShowResume(d)) }}
           onAnalytics={() => { setShowAnalytics(selectedDesigner); setSelectedDesigner(null) }}
           onClose={() => setSelectedDesigner(null)}
-          isAdmin={isAdmin}
+          isAdmin={showAdmin}
         />
       )}
       {showTerms            && <TermsPage            onClose={() => setShowTerms(false)} />}
@@ -637,7 +643,7 @@ export default function App() {
                 </Body>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <Btn variant="gold" size="lg" onClick={openDesignerFlow}>{COPY.forDesigners.cta}</Btn>
-                  {isAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>}
+                  {showAdmin && <Btn variant="outline" size="lg" onClick={() => setShowAnalytics(DESIGNERS[0])}>Analytics Demo</Btn>}
                 </div>
               </div>
               <div className="for-designers-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: S.borderFaint, borderRadius: S.radiusSm, overflow: 'hidden' }}>
@@ -681,7 +687,7 @@ export default function App() {
                 { label: 'Marketplace',  fn: () => scrollTo('marketplace')  },
                 { label: 'How It Works', fn: () => scrollTo('how-it-works') },
                 { label: 'Messages',     fn: () => user ? openOverlay(() => setShowChat(true)) : openAuth('login', 'client') },
-                ...(isAdmin ? [{ label: 'Admin Panel', fn: () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') } }] : []),
+                ...(showAdmin ? [{ label: 'Admin Panel', fn: () => { window.history.pushState({}, '', '/admin'); setCurrentPath('/admin') } }] : []),
               ].map(l => (
                 <div key={l.label} onClick={l.fn} style={{ color: S.textFaint, fontSize: 12, fontFamily: S.body, marginBottom: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onMouseEnter={(e: any) => (e.target.style.color = S.text)}
