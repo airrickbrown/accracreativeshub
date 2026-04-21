@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 import { supabase } from '../lib/supabase'
 import { signUpUser } from '../lib/auth'
 import { checkRateLimit, formatRetryTime, resetRateLimit } from '../lib/rateLimiter'
@@ -60,8 +61,8 @@ const Field = ({
           onMouseLeave={() => setHovered(false)}
           style={{
             display: 'block', width: '100%',
-            background: focused ? 'rgba(201,168,76,0.03)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${focused ? S.gold : hovered ? S.border : 'rgba(255,255,255,0.09)'}`,
+            background: focused ? 'rgba(201,168,76,0.03)' : S.surfaceHigh,
+            border: `1px solid ${focused ? S.gold : hovered ? S.border : S.borderFaint}`,
             borderRadius: 10, color: S.text, fontFamily: S.body,
             fontSize: 16,
             padding: suffix ? '15px 52px 15px 16px' : '15px 16px',
@@ -96,6 +97,7 @@ const Banner = ({ type, children }: { type: 'error' | 'success' | 'info'; childr
 export default function AuthModal({
   onClose, defaultTab = 'login', defaultRole, lockRole,
 }: AuthModalProps) {
+  useTheme() // subscribe to theme so S tokens update on toggle
   const [tab, setTab]         = useState(defaultTab)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
@@ -195,7 +197,7 @@ export default function AuthModal({
     } catch { /* ignore */ }
     const { error: e } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: 'https://accracreativeshub.com/auth/callback' },
     })
     if (e) { setError('Google sign-in failed. Please try again.'); setLoading(false) }
     // On success the page navigates away — no setLoading(false) needed
@@ -222,10 +224,10 @@ export default function AuthModal({
       <style>{STYLES}</style>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
 
-      <div className="ach-modal ach-sheet" style={{ zIndex: 300, background: '#111114', border: '1px solid rgba(201,168,76,0.14)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflowY: 'auto', padding: '0 0 40px' }}>
+      <div className="ach-modal ach-sheet" style={{ zIndex: 300, background: S.surface, border: `1px solid rgba(201,168,76,0.14)`, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflowY: 'auto', padding: '0 0 40px' }}>
 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 0' }}>
-          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.1)' }} />
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: S.border }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 20px 0' }}>
           <button onClick={onClose}
@@ -254,7 +256,7 @@ export default function AuthModal({
           </div>
 
           {/* Tab switcher */}
-          <div style={{ display: 'flex', gap: 3, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 3, marginBottom: 22 }}>
+          <div style={{ display: 'flex', gap: 3, background: S.bgLow, border: `1px solid ${S.borderFaint}`, borderRadius: 10, padding: 3, marginBottom: 22 }}>
             {(['login', 'signup'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)} style={{
                 flex: 1, padding: '10px 0', borderRadius: 8, textAlign: 'center',
@@ -279,8 +281,8 @@ export default function AuthModal({
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               width: '100%', minHeight: 50,
-              background: loading ? '#1e1e22' : '#25252a',
-              border: '1px solid rgba(255,255,255,0.22)',
+              background: loading ? S.bgLow : S.surfaceHigh,
+              border: `1px solid ${S.border}`,
               borderRadius: 10,
               cursor: loading ? 'not-allowed' : 'pointer',
               fontFamily: S.body, fontSize: 14, color: S.text,
@@ -289,8 +291,8 @@ export default function AuthModal({
               userSelect: 'none',
               opacity: loading ? 0.6 : 1,
             }}
-            onMouseEnter={(e: any) => { if (!loading) { e.currentTarget.style.background = '#2e2e35'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)' } }}
-            onMouseLeave={(e: any) => { e.currentTarget.style.background = loading ? '#1e1e22' : '#25252a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)' }}
+            onMouseEnter={(e: any) => { if (!loading) { e.currentTarget.style.background = S.surfaceHighest; e.currentTarget.style.borderColor = S.border } }}
+            onMouseLeave={(e: any) => { e.currentTarget.style.background = loading ? S.bgLow : S.surfaceHigh; e.currentTarget.style.borderColor = S.border }}
           >
             <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
               <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
@@ -305,9 +307,9 @@ export default function AuthModal({
 
           {/* OR divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ flex: 1, height: 1, background: S.borderFaint }} />
             <span style={{ fontFamily: S.body, fontSize: 11, color: S.textFaint, letterSpacing: '0.08em' }}>or continue with email</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ flex: 1, height: 1, background: S.borderFaint }} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -324,8 +326,8 @@ export default function AuthModal({
                     const on = form.role === r.k
                     return (
                       <button key={r.k} onClick={() => f('role', r.k)} style={{
-                        background:   on ? 'rgba(201,168,76,0.1)' : 'rgba(255,255,255,0.03)',
-                        border:       `1px solid ${on ? S.gold : 'rgba(255,255,255,0.08)'}`,
+                        background:   on ? 'rgba(201,168,76,0.1)' : S.surfaceHigh,
+                        border:       `1px solid ${on ? S.gold : S.borderFaint}`,
                         borderRadius: 10, padding: '14px 12px',
                         textAlign: 'left', transition: 'all 0.18s ease',
                         transform: on ? 'scale(1.01)' : 'scale(1)',

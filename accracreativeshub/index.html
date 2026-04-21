@@ -143,11 +143,17 @@
       rel="stylesheet"
     />
 
-    <!-- Prevent flash of unstyled content -->
+    <!-- Prevent flash of unstyled content — default to dark, script overrides if saved preference is light -->
     <style>
-      html, body, #root { background: #0a0a0a; margin: 0; padding: 0; }
+      html, body, #root { background: #080808; margin: 0; padding: 0; }
       body { font-family: 'Manrope', Arial, sans-serif; }
+      /* Applied during theme toggle to suppress all CSS transitions for an instant switch */
+      .no-transition, .no-transition * { transition: none !important; animation: none !important; }
     </style>
+    <!-- Apply saved theme BEFORE React hydrates to eliminate any flash -->
+    <script>
+      (function(){try{var t=localStorage.getItem('ach_theme');if(t==='light'){var bg='#f9f7f2';document.documentElement.style.background=bg;document.body.style.background=bg;document.documentElement.setAttribute('data-theme','light');}}catch(e){}}());
+    </script>
   </head>
   <body>
     <div id="root"></div>

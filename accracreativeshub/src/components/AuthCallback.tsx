@@ -58,13 +58,30 @@ export default function AuthCallback({ onDone }: Props) {
       }
     })
 
-    // Fallback: already-active session (e.g. tab refresh after auth)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        subscription.unsubscribe()
-        handleSession(session.user)
-      }
-    })
+    const code = params.get('code')
+    if (code) {
+      // Explicit PKCE exchange — guards against cases where detectSessionInUrl
+      // doesn't fire (e.g. the code verifier was stored on a different origin
+      // due to a www↔non-www redirect before the callback).
+      supabase.auth.exchangeCodeForSession(window.location.href)
+        .then(({ data, error: exchErr }) => {
+          if (exchErr) {
+            setErrorMsg(exchErr.message)
+            setStatus('error')
+          } else if (data?.session?.user) {
+            subscription.unsubscribe()
+            handleSession(data.session.user)
+          }
+        })
+    } else {
+      // Fallback: already-active session (e.g. tab refresh after auth)
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          subscription.unsubscribe()
+          handleSession(session.user)
+        }
+      })
+    }
 
     return () => subscription.unsubscribe()
   }, [onDone])

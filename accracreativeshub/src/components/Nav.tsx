@@ -4,6 +4,26 @@ import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
 import { useTheme } from '../ThemeContext'
 
+const SunIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4.5"/>
+    <line x1="12" y1="2" x2="12" y2="4.5"/>
+    <line x1="12" y1="19.5" x2="12" y2="22"/>
+    <line x1="4.93" y1="4.93" x2="6.69" y2="6.69"/>
+    <line x1="17.31" y1="17.31" x2="19.07" y2="19.07"/>
+    <line x1="2" y1="12" x2="4.5" y2="12"/>
+    <line x1="19.5" y1="12" x2="22" y2="12"/>
+    <line x1="4.93" y1="19.07" x2="6.69" y2="17.31"/>
+    <line x1="17.31" y1="6.69" x2="19.07" y2="4.93"/>
+  </svg>
+)
+
+const MoonIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+)
+
 interface NavProps {
   scrolled:          boolean
   user:              any
@@ -71,10 +91,12 @@ export default function Nav({
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      background:   scrolled ? 'rgba(8,8,8,0.97)' : 'rgba(8,8,8,0.99)',
-      borderBottom: `1px solid ${scrolled ? 'rgba(201,168,76,0.15)' : 'rgba(77,70,55,0.1)'}`,
+      background: isDark
+        ? (scrolled ? 'rgba(8,8,8,0.97)' : 'rgba(8,8,8,0.99)')
+        : (scrolled ? 'rgba(249,247,242,0.97)' : 'rgba(249,247,242,0.99)'),
+      borderBottom: `1px solid ${scrolled ? 'rgba(201,168,76,0.15)' : S.borderFaint}`,
       backdropFilter: 'blur(20px)',
-      transition: 'all 0.3s ease',
+      transition: 'background 0s, border-color 0.3s ease',
       minHeight: isMobile ? 64 : 72,
     }}>
       <div style={{
@@ -156,11 +178,11 @@ export default function Nav({
               <button
                 onClick={toggleTheme}
                 title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '9px 12px', borderRadius: 8, fontSize: 14, lineHeight: 1 }}
+                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '9px 12px', borderRadius: 8, lineHeight: 1, display: 'flex', alignItems: 'center', transition: 'none' }}
                 onMouseEnter={(e: any) => { e.currentTarget.style.color = S.gold; e.currentTarget.style.borderColor = `${S.gold}60` }}
                 onMouseLeave={(e: any) => { e.currentTarget.style.color = S.textMuted; e.currentTarget.style.borderColor = S.borderFaint }}
               >
-                {isDark ? '○' : '●'}
+                {isDark ? <SunIcon /> : <MoonIcon />}
               </button>
 
               {user ? (
@@ -227,7 +249,7 @@ export default function Nav({
 
       {/* ── Mobile drawer ── */}
       {isMobile && mobileOpen && (
-        <div style={{ borderTop: `1px solid ${S.borderFaint}`, background: 'rgba(6,6,6,0.99)', padding: '12px 16px 24px' }}>
+        <div style={{ borderTop: `1px solid ${S.borderFaint}`, background: isDark ? 'rgba(6,6,6,0.99)' : 'rgba(249,247,242,0.99)', padding: '12px 16px 24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {navLinks.map(l => (
               <button key={l.key} onClick={l.fn}
@@ -237,9 +259,10 @@ export default function Nav({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
               <button
                 onClick={toggleTheme}
-                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '12px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}
+                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '12px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'none' }}
               >
-                {isDark ? '○ Light Mode' : '● Dark Mode'}
+                {isDark ? <SunIcon /> : <MoonIcon />}
+                {isDark ? 'Light Mode' : 'Dark Mode'}
               </button>
               {user ? (
                 <>
