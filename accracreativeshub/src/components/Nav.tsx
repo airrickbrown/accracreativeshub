@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 
 interface NavProps {
   scrolled:          boolean
@@ -29,6 +30,7 @@ export default function Nav({
   onHowItWorks, onForDesigners, onLogin, onSignOut,
   onDeleteAccount = () => {},
 }: NavProps) {
+  const { isDark, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isMobile, setIsMobile]     = useState(false)
 
@@ -150,6 +152,17 @@ export default function Nav({
             </nav>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '9px 12px', borderRadius: 8, fontSize: 14, lineHeight: 1 }}
+                onMouseEnter={(e: any) => { e.currentTarget.style.color = S.gold; e.currentTarget.style.borderColor = `${S.gold}60` }}
+                onMouseLeave={(e: any) => { e.currentTarget.style.color = S.textMuted; e.currentTarget.style.borderColor = S.borderFaint }}
+              >
+                {isDark ? '○' : '●'}
+              </button>
+
               {user ? (
                 <>
                   <button onClick={onMessages} style={ghostBtn}
@@ -222,6 +235,12 @@ export default function Nav({
               >{l.label}</button>
             ))}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+              <button
+                onClick={toggleTheme}
+                style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '12px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}
+              >
+                {isDark ? '○ Light Mode' : '● Dark Mode'}
+              </button>
               {user ? (
                 <>
                   <button onClick={() => { onMessages(); close() }} style={{ ...btn, color: S.text, border: `1px solid ${S.borderFaint}`, padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>Messages</button>

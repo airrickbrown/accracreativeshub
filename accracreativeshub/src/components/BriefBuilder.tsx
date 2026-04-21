@@ -6,7 +6,7 @@ import { Btn, Hl, Body, Lbl } from './UI'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
 
-const CATEGORIES = [
+const ALL_CATEGORIES = [
   'Logo Design',
   'Business Branding',
   'Flyer Design',
@@ -14,6 +14,20 @@ const CATEGORIES = [
   'UI/UX Design',
   'Motion Graphics',
 ]
+
+// Returns the categories this designer offers.
+// Checks designer.services (array), designer.categories (array), and designer.category (string).
+function getDesignerCategories(designer: any): string[] {
+  const services: string[] = designer?.services || designer?.categories || []
+  if (services.length > 0) {
+    return ALL_CATEGORIES.filter(c => services.some((s: string) => s === c || s.toLowerCase() === c.toLowerCase()))
+  }
+  if (designer?.category) {
+    const match = ALL_CATEGORIES.find(c => c === designer.category || c.toLowerCase() === designer.category.toLowerCase())
+    return match ? [match] : ALL_CATEGORIES
+  }
+  return ALL_CATEGORIES
+}
 
 const BUDGETS = [
   'GH₵ 200 – 500',
@@ -195,12 +209,15 @@ const TextAreaField = ({ label, value, onChange, placeholder, rows = 4 }: {
 export default function BriefBuilder({ designer, onClose, onOrderCreated }: Props) {
   const { user } = useAuth()
 
+  const designerCategories = getDesignerCategories(designer)
+  const defaultCategory    = designerCategories.length === 1 ? designerCategories[0] : ''
+
   const [step, setStep]             = useState<1 | 2 | 3>(1)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState('')
 
   const [form, setForm] = useState({
-    category: '', projectName: '', description: '',
+    category: defaultCategory, projectName: '', description: '',
     budget: '', timeline: '', revisions: '', references: '',
   })
 
@@ -359,8 +376,8 @@ export default function BriefBuilder({ designer, onClose, onOrderCreated }: Prop
                 label="Service Category *"
                 value={form.category}
                 onChange={v => f('category', v)}
-                options={CATEGORIES}
-                placeholder="Select a category ▾"
+                options={designerCategories}
+                placeholder={designerCategories.length === 1 ? designerCategories[0] : 'Select a category ▾'}
               />
               <TextField
                 label="Project Name *"

@@ -4,6 +4,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './AuthContext'
+import { ThemeProvider } from './ThemeContext'
 import PasswordResetPage from './components/PasswordResetPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import './styles/global.css'
@@ -18,9 +19,11 @@ function start() {
     root.render(
       <React.StrictMode>
         <ErrorBoundary>
-          <AuthProvider>
-            <PasswordResetPage />
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <PasswordResetPage />
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </React.StrictMode>
     )
@@ -30,9 +33,11 @@ function start() {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </React.StrictMode>
   )

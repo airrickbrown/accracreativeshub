@@ -6,7 +6,8 @@
 // 4. closeAll only resets overlay state, never auth state
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { S, kenteUrl } from './styles/tokens'
+import { S } from './styles/tokens'
+import { useTheme } from './ThemeContext'
 import { DESIGNERS, ORDERS } from './data/mockData'
 import { ALL_CATS } from './lib/constants'
 import Nav from './components/Nav'
@@ -63,6 +64,7 @@ interface AuthConfig {
 const DEFAULT_AUTH: AuthConfig = { tab: 'login', role: 'client', lockRole: undefined }
 
 export default function App() {
+  const { kenteUrl } = useTheme()
   const [scrolled, setScrolled]                 = useState(false)
   const [heroIn, setHeroIn]                     = useState(false)
   const [category, setCategory]                 = useState('All')
@@ -149,16 +151,23 @@ export default function App() {
 
   // ── Post-verification welcome redirect ──
   // Fires once when justVerified flips true (email link clicked).
-  // clearJustVerified resets the flag so this doesn't re-fire on refreshes.
+  // We wait until the role is known before clearing the flag; if role
+  // isn't loaded yet this effect re-runs when isDesigner/isClient changes.
   useEffect(() => {
     if (!justVerified) return
-    clearJustVerified()
     if (isDesigner) {
+      clearJustVerified()
       openOverlay(() => setShowDesignerWelcome(true))
     } else if (isClient) {
+      clearJustVerified()
+      openOverlay(() => setShowWelcome(true))
+    } else if (user) {
+      // Role not yet determined but user is authenticated — default to client welcome
+      clearJustVerified()
       openOverlay(() => setShowWelcome(true))
     }
-  }, [justVerified, isDesigner, isClient, clearJustVerified, openOverlay])
+    // If !user yet, leave justVerified=true and wait for the next render
+  }, [justVerified, isDesigner, isClient, user, clearJustVerified, openOverlay])
 
   // Show welcome overlay for new Google OAuth users after they select their role
   useEffect(() => {
@@ -274,11 +283,11 @@ export default function App() {
   }
 
   return (
-    <div style={{ background: S.bg, minHeight: '100dvh', color: S.text, fontFamily: S.body, backgroundImage: kenteUrl }}>
+    <div style={{ background: S.bg, minHeight: '100dvh', color: S.text, fontFamily: S.body, backgroundImage: kenteUrl, transition: 'background 0.25s' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
-        html,body,#root { min-height:100%; background:#080808; }
+        html,body,#root { min-height:100%; background:${S.bg}; }
         html,body { margin:0; padding:0; overflow-x:hidden; }
         body { overscroll-behavior-y:none; }
         input,select,textarea { font-size:16px!important; }
@@ -522,11 +531,11 @@ export default function App() {
                 href={`/designers/${slug}`}
                 onClick={e => {
                   e.preventDefault()
-                  window.history.pushState({}, '', `/designers/${slug}`)
-                  setCurrentPath(`/designers/${slug}`)
+                  setCategory(label)
+                  scrollTo('marketplace')
                 }}
                 style={{ display: 'flex', flexDirection: 'column', gap: 8, background: S.surface, border: `1px solid ${S.borderFaint}`, borderRadius: 12, padding: '20px 18px', textDecoration: 'none', transition: 'border-color 0.2s, background 0.2s', cursor: 'pointer' }}
-                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(201,168,76,0.45)'; el.style.background = 'rgba(201,168,76,0.03)' }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = `${S.gold}72`; el.style.background = `${S.gold}06` }}
                 onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = S.borderFaint; el.style.background = S.surface }}
               >
                 <span style={{ fontSize: 22, color: S.gold, lineHeight: 1, opacity: 0.75 }}>{icon}</span>

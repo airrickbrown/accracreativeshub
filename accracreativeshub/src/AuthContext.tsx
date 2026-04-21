@@ -1,6 +1,4 @@
 // ── src/AuthContext.tsx ──
-// Fix: after email verification link is clicked, user is redirected
-// and the welcome page now shows correctly based on role.
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from './lib/supabase'
@@ -13,8 +11,8 @@ interface AuthContextType {
   isClient:         boolean
   emailVerified:    boolean
   loading:          boolean
-  justVerified:     boolean       // true for one render cycle after email verification
-  clearJustVerified: () => void   // call after consuming the flag
+  justVerified:     boolean
+  clearJustVerified: () => void
   signOut:          () => Promise<void>
   refreshUser:      () => Promise<void>
   deleteAccount:    (name?: string) => Promise<void>
@@ -34,21 +32,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading]        = useState(true)
   const [justVerified, setJustVerified] = useState(false)
 
-  const fetchRole = async (userId: string, fallback = 'client'): Promise<string> => {
-    const { data, error } = await supabase.from('profiles').select('role').eq('id', userId).single()
-    if (error) {
-      // Surface DB errors (e.g. RLS recursion) instead of silently masking them
-      console.error('[fetchRole] profiles query failed:', error.message)
-      return fallback
+  // Fetch the profile row and return the role. If no row exists yet (new signup),
+  // create it from user_metadata — this is safe because we're called only when
+  // a SIGNED_IN event fires, meaning auth.uid() = user.id is guaranteed.
+  const fetchOrCreateProfile = async (u: any): Promise<string> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', u.id)
+      .single()
+
+    if (data?.role) return data.role
+
+    if (error?.code === 'PGRST116' || !data) {
+      // Row doesn't exist yet — create it now that the session is active
+      const role     = u.user_metadata?.role || 'client'
+      const fullName = u.user_metadata?.full_name || u.email?.split('@')[0] || 'User'
+      const { error: insertErr } = await supabase
+        .from('profiles')
+        .upsert([{ id: u.id, full_name: fullName, role, email: u.email }], { onConflict: 'id' })
+      if (insertErr) {
+        console.error('[AuthContext] profile upsert failed:', insertErr.message)
+      }
+      return role
     }
-    return data?.role || fallback
+
+    console.error('[fetchOrCreateProfile] profiles query failed:', (error as any)?.message)
+    return u.user_metadata?.role || 'client'
   }
 
   const processUser = useCallback(async (u: any) => {
     if (!u) { setUser(null); setUserRole(null); setVerified(false); return }
     setUser(u)
     setVerified(!!u.email_confirmed_at)
-    const role = await fetchRole(u.id, u.user_metadata?.role || 'client')
+    const role = await fetchOrCreateProfile(u)
     setUserRole(role as any)
   }, [])
 
@@ -73,33 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event: string, session: any) => {
 
         if (['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
-          // processUser once per event — fetches role and sets all auth state
           await processUser(session?.user ?? null)
 
           // ── Detect fresh email verification ──────────────────────────────
-          // We cannot rely on URL hash inspection: Supabase JS strips the
-          // #access_token fragment synchronously during client init, before
-          // any async code (including this callback) ever runs.
-          //
-          // Instead, signUpUser() stores the pending email in localStorage.
-          // We check it here and clear it on first match so it only fires once,
-          // even if the verification link opens in a different tab or browser.
           if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
             try {
               const pendingEmail = localStorage.getItem('ach_verifying')
               if (pendingEmail && pendingEmail === session.user.email?.toLowerCase()) {
-                // Confirm recency — email_confirmed_at must be within the last 15 minutes
                 const confirmedMs = new Date(session.user.email_confirmed_at).getTime()
                 if (Date.now() - confirmedMs < 15 * 60 * 1000) {
                   localStorage.removeItem('ach_verifying')
-                  // Clean the URL (remove any leftover Supabase query params)
                   window.history.replaceState({}, '', '/')
-                  // Signal App.tsx to show the role-appropriate welcome overlay.
-                  // Role is already set in state by processUser above.
                   setJustVerified(true)
                 }
               }
-            } catch { /* localStorage unavailable — skip verification detection */ }
+            } catch { /* localStorage unavailable */ }
           }
 
         } else if (event === 'SIGNED_OUT') {
@@ -114,21 +119,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [processUser])
 
   const signOut = async () => {
-    // Nuke all realtime subscriptions before clearing session
-    try { await supabase.removeAllChannels() } catch { /* ignore */ }
-    await supabase.auth.signOut()
+    // Clear local state immediately so UI updates without waiting for Supabase
     setUser(null); setUserRole(null); setVerified(false)
-    // Clear all ACH auth keys from storage
     try {
       localStorage.removeItem('ach_verifying')
       localStorage.removeItem('ach_last_activity')
       sessionStorage.removeItem('ach_adm_ok')
     } catch { /* ignore */ }
     window.history.replaceState({}, '', '/')
+    // Clean up async in background — don't await
+    supabase.removeAllChannels().catch(() => {})
+    supabase.auth.signOut().catch(() => {})
   }
 
-  // Calls the server-side delete-account function which uses the service role key
-  // to anonymize profile data and delete the auth user, then clears local session.
   const deleteAccount = async (name?: string) => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('Not authenticated')
@@ -147,7 +150,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.error || 'Account deletion failed. Please contact support.')
     }
 
-    // Auth user is now deleted server-side. Clear local session gracefully.
     await supabase.auth.signOut().catch(() => {})
     setUser(null); setUserRole(null); setVerified(false)
     window.history.replaceState({}, '', '/')

@@ -78,8 +78,10 @@ export const signUpUser = async ({
     throw new Error('An account with this email already exists. Please log in instead.')
   }
 
-  // Create profile row — throws if this fails (surfaces real DB/RLS errors)
-  await upsertProfile(data.user.id, fullName, role, email)
+  // Profile row is created in AuthContext.processUser() on the SIGNED_IN event,
+  // after the auth session is fully established. Inserting here (before email
+  // confirmation) would fail the "auth.uid() = id" RLS policy because the user
+  // is not yet authenticated on the Supabase side.
 
   // Mark this email as pending verification so AuthContext can detect the callback reliably.
   // localStorage persists across tabs/windows so it works even if the email client
