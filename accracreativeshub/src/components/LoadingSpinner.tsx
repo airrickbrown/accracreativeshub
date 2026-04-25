@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 
 // ── LoadingSpinner ──────────────────────────────────────────
 
@@ -139,6 +140,7 @@ interface HelpProps {
 }
 
 export function HelpButton({ onHome, isHomePage = false }: HelpProps) {
+  const { isDark } = useTheme()
   const [show, setShow]         = useState(false)
   const [hover, setHover]       = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -187,11 +189,11 @@ export function HelpButton({ onHome, isHomePage = false }: HelpProps) {
       {/* Expanded menu */}
       {expanded && (
         <div style={{
-          background: '#131313',
-          border: `1px solid rgba(201,168,76,0.2)`,
+          background: S.surface,
+          border: `1px solid ${S.border}`,
           borderRadius: 12, padding: 6,
           display: 'flex', flexDirection: 'column', gap: 2,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
           animation: 'help_in 0.2s ease',
           minWidth: 180,
         }}>
@@ -204,7 +206,7 @@ export function HelpButton({ onHome, isHomePage = false }: HelpProps) {
               fontSize: 'clamp(12px,3vw,13px)', color: S.text,
               transition: 'background 0.15s', textAlign: 'left', width: '100%',
             }}
-              onMouseEnter={(e: any) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseEnter={(e: any) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')}
               onMouseLeave={(e: any) => (e.currentTarget.style.background = 'none')}
             >
               <span style={{ color: S.gold, fontSize: 14, width: 18, textAlign: 'center' }}>{item.icon}</span>
@@ -222,13 +224,13 @@ export function HelpButton({ onHome, isHomePage = false }: HelpProps) {
         style={{
           width: 'clamp(44px,10vw,52px)', height: 'clamp(44px,10vw,52px)',
           borderRadius: '50%',
-          background: expanded ? S.gold : hover ? S.gold : '#131313',
-          border: `2px solid ${expanded ? 'transparent' : 'rgba(201,168,76,0.35)'}`,
-          color: expanded || hover ? '#131313' : S.gold,
+          background: expanded ? S.gold : hover ? S.gold : S.surface,
+          border: `2px solid ${expanded ? 'transparent' : S.border}`,
+          color: expanded || hover ? (isDark ? '#131313' : '#fff') : S.gold,
           fontSize: 18,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: hover ? '0 6px 24px rgba(201,168,76,0.3)' : '0 4px 16px rgba(0,0,0,0.4)',
+          boxShadow: hover ? '0 6px 24px rgba(201,168,76,0.3)' : isDark ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.12)',
           transition: 'all 0.2s ease',
           transform: hover ? 'scale(1.05)' : 'scale(1)',
         }}

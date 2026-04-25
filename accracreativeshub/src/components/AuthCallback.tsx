@@ -65,7 +65,11 @@ export default function AuthCallback({ onDone }: Props) {
       // due to a www↔non-www redirect before the callback).
       supabase.auth.exchangeCodeForSession(window.location.href)
         .then(({ data, error: exchErr }) => {
+          // If the SIGNED_IN event already handled the session, ignore this result
+          // (detectSessionInUrl may have already exchanged the code successfully).
+          if (handled.current) return
           if (exchErr) {
+            // Only surface the error if the session wasn't already established
             setErrorMsg(exchErr.message)
             setStatus('error')
           } else if (data?.session?.user) {

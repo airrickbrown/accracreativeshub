@@ -38,7 +38,7 @@ interface NavProps {
   onForDesigners:    () => void
   onLogin:           () => void
   onSignOut:         () => void
-  onDeleteAccount?:  () => void
+  onProfile?:        () => void
 }
 
 export default function Nav({
@@ -48,7 +48,7 @@ export default function Nav({
   isClient   = false,
   onAdmin, onSignup, onMessages, onMarketplace,
   onHowItWorks, onForDesigners, onLogin, onSignOut,
-  onDeleteAccount = () => {},
+  onProfile = () => {},
 }: NavProps) {
   const { isDark, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -127,9 +127,9 @@ export default function Nav({
               objectFit:    'contain',
               display:      'block',
               flexShrink:   0,
-              // This removes the black background completely on dark navbars
-              // 'screen' mode: black = transparent, colours = visible
-              mixBlendMode: 'screen' as any,
+              // screen: makes black transparent on dark backgrounds
+              // multiply: makes white transparent on light backgrounds
+              mixBlendMode: (isDark ? 'screen' : 'multiply') as any,
             }}
             onError={(e: any) => { e.target.style.display = 'none' }}
           />
@@ -206,15 +206,15 @@ export default function Nav({
                     >◈ Admin</button>
                   )}
 
+                  <button onClick={onProfile} style={ghostBtn}
+                    onMouseEnter={(e: any) => { e.currentTarget.style.color = S.text; e.currentTarget.style.borderColor = S.border }}
+                    onMouseLeave={(e: any) => { e.currentTarget.style.color = S.textMuted; e.currentTarget.style.borderColor = S.borderFaint }}
+                  >Profile</button>
+
                   <button onClick={onSignOut} style={{ ...btn, color: '#ef4444', border: '1px solid rgba(239,68,68,0.28)', padding: '9px 16px', borderRadius: 8 }}
                     onMouseEnter={(e: any) => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = '#ef4444' }}
                     onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.28)' }}
                   >Sign Out</button>
-
-                  <button onClick={onDeleteAccount} style={{ ...btn, color: 'rgba(220,85,85,0.55)', border: '1px solid rgba(220,85,85,0.18)', padding: '9px 14px', borderRadius: 8, fontSize: 10 }}
-                    onMouseEnter={(e: any) => { e.currentTarget.style.color = '#e05555'; e.currentTarget.style.background = 'rgba(220,85,85,0.07)'; e.currentTarget.style.borderColor = 'rgba(220,85,85,0.4)' }}
-                    onMouseLeave={(e: any) => { e.currentTarget.style.color = 'rgba(220,85,85,0.55)'; e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'rgba(220,85,85,0.18)' }}
-                  >Delete Account</button>
                 </>
               ) : (
                 <>
@@ -269,8 +269,8 @@ export default function Nav({
                   <button onClick={() => { onMessages(); close() }} style={{ ...btn, color: S.text, border: `1px solid ${S.borderFaint}`, padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>Messages</button>
                   {isDesigner && !isAdmin && <button onClick={() => { onSignup(); close() }} style={{ ...btn, color: S.textMuted, border: `1px solid ${S.borderFaint}`, padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>My Application</button>}
                   {isAdmin && <button onClick={() => { onAdmin(); close() }} style={{ ...btn, color: S.gold, border: `1px solid rgba(201,168,76,0.35)`, background: 'rgba(201,168,76,0.06)', padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>◈ Admin Panel</button>}
+                  <button onClick={() => { onProfile(); close() }} style={{ ...btn, color: S.text, border: `1px solid ${S.borderFaint}`, padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>Profile Settings</button>
                   <button onClick={() => { onSignOut(); close() }} style={{ ...btn, color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '14px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 13 }}>Sign Out</button>
-                  <button onClick={() => { onDeleteAccount(); close() }} style={{ ...btn, color: 'rgba(220,85,85,0.6)', border: '1px solid rgba(220,85,85,0.18)', padding: '12px 0', borderRadius: 8, textAlign: 'center', width: '100%', fontSize: 11 }}>Delete Account</button>
                 </>
               ) : (
                 <>

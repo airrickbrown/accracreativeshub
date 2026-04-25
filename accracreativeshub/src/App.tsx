@@ -43,6 +43,7 @@ import CookieBanner from './components/CookieBanner'
 import DeleteAccountModal from './components/DeleteAccountModal'
 import SignedOutPage from './components/SignedOutPage'
 import CategoryPage, { CATEGORY_SLUGS } from './components/CategoryPage'
+import ProfileSettings from './components/ProfileSettings'
 
 
 const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -64,7 +65,7 @@ interface AuthConfig {
 const DEFAULT_AUTH: AuthConfig = { tab: 'login', role: 'client', lockRole: undefined }
 
 export default function App() {
-  const { kenteUrl } = useTheme()
+  const { kenteUrl, isDark } = useTheme()
   const [scrolled, setScrolled]                 = useState(false)
   const [heroIn, setHeroIn]                     = useState(false)
   const [category, setCategory]                 = useState('All')
@@ -86,6 +87,7 @@ export default function App() {
   const [showAbout, setShowAbout]               = useState(false)
   const [showSignedOut, setShowSignedOut]               = useState(false)
   const [showDeleteAccount, setShowDeleteAccount]     = useState(false)
+  const [showProfile, setShowProfile]               = useState(false)
   // null = not yet loaded, false = not accepted (show modal), true = accepted
   const [agreementAccepted, setAgreementAccepted] = useState<boolean | null>(null)
   const [showWelcome, setShowWelcome]           = useState(false)
@@ -137,6 +139,7 @@ export default function App() {
     setShowContact(false);     setShowAbout(false)
     setShowSignedOut(false); setShowDeleteAccount(false)
     setShowWelcome(false);     setShowDesignerWelcome(false)
+    setShowProfile(false)
     setAuthConfig(DEFAULT_AUTH)
   }, [])
 
@@ -277,9 +280,9 @@ export default function App() {
     onMarketplace:  () => { window.scrollTo({ top: 0, behavior: 'smooth' }) },
     onHowItWorks:   () => scrollTo('how-it-works'),
     onForDesigners: () => scrollTo('for-designers'),
-    onLogin:        () => openAuth('login', 'client'),
-    onSignOut:        handleLogout,
-    onDeleteAccount:  () => openOverlay(() => setShowDeleteAccount(true)),
+    onLogin:    () => openAuth('login', 'client'),
+    onSignOut:  handleLogout,
+    onProfile:  () => openOverlay(() => setShowProfile(true)),
   }
 
   return (
@@ -408,6 +411,7 @@ export default function App() {
       {showPrivacy          && <PrivacyPage          onClose={() => setShowPrivacy(false)} />}
       {showPayments         && <PaymentsDisputesPage onClose={() => setShowPayments(false)} />}
       {showDesignerAgreement && <DesignerAgreementPage onClose={() => setShowDesignerAgreement(false)} />}
+      {showProfile && user && <ProfileSettings onClose={() => setShowProfile(false)} />}
       {showContact && <ContactPage onClose={() => setShowContact(false)} />}
       {showAbout   && (
         <AboutPage
@@ -669,7 +673,7 @@ export default function App() {
       )}
 
       {/* ── Footer ── */}
-      <footer className="footer-root" style={{ background: '#040404', borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
+      <footer className="footer-root" style={{ background: isDark ? '#040404' : S.bgDeep, borderTop: `1px solid ${S.borderFaint}`, padding: '56px 40px 36px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
             <div>
