@@ -16,6 +16,8 @@ interface AuthContextType {
   signOut:          () => Promise<void>
   refreshUser:      () => Promise<void>
   deleteAccount:    (name?: string) => Promise<void>
+  hasSeenWelcome:   boolean | null  // null = still loading
+  markWelcomeSeen:  () => Promise<void>
 }
 
 const Ctx = createContext<AuthContextType>({
@@ -23,6 +25,7 @@ const Ctx = createContext<AuthContextType>({
   isClient: false, emailVerified: false, loading: true,
   justVerified: false, clearJustVerified: () => {},
   signOut: async () => {}, refreshUser: async () => {}, deleteAccount: async () => {},
+  hasSeenWelcome: null, markWelcomeSeen: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [emailVerified, setVerified] = useState(false)
   const [loading, setLoading]        = useState(true)
   const [justVerified, setJustVerified] = useState(false)
+  const [hasSeenWelcome, setHasSeenWelcome] = useState<boolean | null>(null)
 
   // Fetch the profile row and return the role. If no row exists yet (new signup),
   // create it from user_metadata — this is safe because we're called only when
@@ -62,11 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const processUser = useCallback(async (u: any) => {
-    if (!u) { setUser(null); setUserRole(null); setVerified(false); return }
+    if (!u) { setUser(null); setUserRole(null); setVerified(false); setHasSeenWelcome(null); return }
     setUser(u)
     setVerified(!!u.email_confirmed_at)
     const role = await fetchOrCreateProfile(u)
     setUserRole(role as any)
+    // Non-blocking fetch for has_seen_welcome — graceful if column doesn't exist yet
+    supabase.from('profiles').select('has_seen_welcome').eq('id', u.id).single()
+      .then(({ data }) => setHasSeenWelcome((data as any)?.has_seen_welcome === true))
+      .catch(() => setHasSeenWelcome(false))
   }, [])
 
   const refreshUser = useCallback(async () => {
@@ -108,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
         } else if (event === 'SIGNED_OUT') {
-          setUser(null); setUserRole(null); setVerified(false)
+          setUser(null); setUserRole(null); setVerified(false); setHasSeenWelcome(null)
           try { localStorage.removeItem('ach_verifying') } catch { /* ignore */ }
         }
         setLoading(false)
@@ -155,6 +163,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.history.replaceState({}, '', '/')
   }
 
+  const markWelcomeSeen = useCallback(async () => {
+    setHasSeenWelcome(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        await supabase.from('profiles').update({ has_seen_welcome: true }).eq('id', session.user.id)
+      }
+    } catch { /* column may not exist yet in DB — silently ignore */ }
+  }, [])
+
   const clearJustVerified = useCallback(() => setJustVerified(false), [])
 
   return (
@@ -162,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user, userRole, emailVerified, loading,
       justVerified, clearJustVerified,
       signOut, refreshUser, deleteAccount,
+      hasSeenWelcome, markWelcomeSeen,
       isAdmin:    userRole === 'admin',
       isDesigner: userRole === 'designer',
       isClient:   !!user && !['admin', 'designer'].includes(userRole || ''),

@@ -96,7 +96,7 @@ export default function App() {
   useOwnPresence()
 
   // ── Auth state from context — NEVER modified by overlay logic ──
-  const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified, loading: authLoading } = useAuth()
+  const { user, signOut, deleteAccount, isAdmin, isDesigner, isClient, justVerified, clearJustVerified, loading: authLoading, hasSeenWelcome, markWelcomeSeen } = useAuth()
 
   // Admin nav visibility is driven by email so it works even when DB role
   // lookup is degraded (e.g. RLS issues). AdminRoute enforces the real gate.
@@ -154,10 +154,11 @@ export default function App() {
 
   // ── Post-verification welcome redirect ──
   // Fires once when justVerified flips true (email link clicked).
-  // We wait until the role is known before clearing the flag; if role
-  // isn't loaded yet this effect re-runs when isDesigner/isClient changes.
+  // Waits for hasSeenWelcome to load before acting; skips if already seen.
   useEffect(() => {
     if (!justVerified) return
+    if (hasSeenWelcome === null) return  // wait for DB flag to load
+    if (hasSeenWelcome === true) { clearJustVerified(); return }
     if (isDesigner) {
       clearJustVerified()
       openOverlay(() => setShowDesignerWelcome(true))
@@ -165,24 +166,24 @@ export default function App() {
       clearJustVerified()
       openOverlay(() => setShowWelcome(true))
     } else if (user) {
-      // Role not yet determined but user is authenticated — default to client welcome
       clearJustVerified()
       openOverlay(() => setShowWelcome(true))
     }
-    // If !user yet, leave justVerified=true and wait for the next render
-  }, [justVerified, isDesigner, isClient, user, clearJustVerified, openOverlay])
+  }, [justVerified, isDesigner, isClient, user, clearJustVerified, openOverlay, hasSeenWelcome])
 
   // Show welcome overlay for new Google OAuth users after they select their role
   useEffect(() => {
     if (authLoading || !user) return
+    if (hasSeenWelcome === null) return  // wait for DB flag to load
     try {
       const googleNew = localStorage.getItem('ach_google_new')
       if (!googleNew) return
       localStorage.removeItem('ach_google_new')
+      if (hasSeenWelcome === true) return  // already seen — skip
       if (googleNew === 'designer') openOverlay(() => setShowDesignerWelcome(true))
       else openOverlay(() => setShowWelcome(true))
     } catch { /* ignore */ }
-  }, [authLoading, user, openOverlay])
+  }, [authLoading, user, openOverlay, hasSeenWelcome])
 
   useEffect(() => {
     if (currentPath === '/signup' && !user) {
@@ -349,17 +350,19 @@ export default function App() {
       {/* ── Overlays ── */}
       {showWelcome && isClient && (
         <ClientWelcome
-          onBrowse={() => { setShowWelcome(false); scrollTo('marketplace') }}
-          onMessages={() => { setShowWelcome(false); openOverlay(() => setShowChat(true)) }}
+          onBrowse={() => { markWelcomeSeen(); setShowWelcome(false); scrollTo('marketplace') }}
+          onMessages={() => { markWelcomeSeen(); setShowWelcome(false); openOverlay(() => setShowChat(true)) }}
         />
       )}
       {showDesignerWelcome && isDesigner && (
         <DesignerWelcome
           onContinue={() => {
+            markWelcomeSeen()
             setShowDesignerWelcome(false)
             openOverlay(() => setShowSignup(true))
           }}
           onBrowse={() => {
+            markWelcomeSeen()
             setShowDesignerWelcome(false)
             scrollTo('marketplace')
           }}

@@ -77,9 +77,15 @@ export default function ProfileSettings({ onClose }: Props) {
   const [avatarFile, setAvatarFile]       = useState<File | null>(null)
 
   // Security
-  const [newPw, setNewPw]       = useState('')
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw]         = useState('')
   const [confirmPw, setConfirmPw] = useState('')
-  const [showPw, setShowPw]     = useState(false)
+  const [showPw, setShowPw]       = useState(false)
+  const [newEmail, setNewEmail]   = useState('')
+
+  const isPasswordUser = Array.isArray(user?.app_metadata?.providers)
+    ? user.app_metadata.providers.includes('email')
+    : user?.app_metadata?.provider === 'email'
 
   // Designer-specific
   const [tagline, setTagline]   = useState('')
@@ -193,17 +199,47 @@ export default function ProfileSettings({ onClose }: Props) {
 
   // ── Change password ───────────────────────────────────────────
   const handleChangePassword = async () => {
-    if (!newPw)            { setError('Enter a new password.'); return }
-    if (newPw.length < 8)  { setError('Password must be at least 8 characters.'); return }
-    if (newPw !== confirmPw) { setError('Passwords do not match.'); return }
+    if (isPasswordUser && !currentPw) { setError('Enter your current password.'); return }
+    if (!newPw)                        { setError('Enter a new password.'); return }
+    if (newPw.length < 8)              { setError('Password must be at least 8 characters.'); return }
+    if (newPw !== confirmPw)           { setError('Passwords do not match.'); return }
+    if (isPasswordUser && currentPw === newPw) { setError('New password must differ from current.'); return }
     setSaving(true); clearMsg()
     try {
+      if (isPasswordUser && user?.email) {
+        const { error: reAuthErr } = await supabase.auth.signInWithPassword({
+          email: user.email, password: currentPw,
+        })
+        if (reAuthErr) { setError('Current password is incorrect.'); setSaving(false); return }
+      }
       const { error: pwErr } = await supabase.auth.updateUser({ password: newPw })
       if (pwErr) throw new Error(pwErr.message)
-      setNewPw(''); setConfirmPw('')
+      setCurrentPw(''); setNewPw(''); setConfirmPw('')
       setSuccess('Password updated successfully.')
     } catch (err: any) {
       setError(err.message || 'Failed to update password.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Change email ──────────────────────────────────────────────
+  const handleEmailChange = async () => {
+    if (!newEmail.trim())              { setError('Enter a new email address.'); return }
+    if (!newEmail.includes('@'))       { setError('Enter a valid email address.'); return }
+    if (newEmail.trim().toLowerCase() === user?.email?.toLowerCase()) {
+      setError('That is already your current email.'); return
+    }
+    setSaving(true); clearMsg()
+    try {
+      const { error: emailErr } = await supabase.auth.updateUser({
+        email: newEmail.trim().toLowerCase(),
+      })
+      if (emailErr) throw new Error(emailErr.message)
+      setNewEmail('')
+      setSuccess('Confirmation sent — check your new inbox and click the link to complete the change.')
+    } catch (err: any) {
+      setError(err.message || 'Failed to update email.')
     } finally {
       setSaving(false)
     }
@@ -278,12 +314,34 @@ export default function ProfileSettings({ onClose }: Props) {
     }
   }
 
+  // ── Section tab icons ────────────────────────────────────────
+  const PersonIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 5 }}>
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+    </svg>
+  )
+  const LockIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 5 }}>
+      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  )
+  const BrushIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 5 }}>
+      <path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1 1 2.48 1.02 3.5 1.02 2.2 0 3.5-1.55 3.5-3.04 0-1.66-1.37-3.02-2-3.02z"/>
+    </svg>
+  )
+  const AlertTriangleIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 5 }}>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  )
+
   // ── Section tabs ──────────────────────────────────────────────
-  const sections: { key: Section; label: string; icon: string }[] = [
-    { key: 'profile',  label: 'Profile Info',     icon: '◉' },
-    { key: 'security', label: 'Security',          icon: '⚿' },
-    ...(isDesigner ? [{ key: 'designer' as Section, label: 'Designer', icon: '◈' }] : []),
-    { key: 'danger',   label: 'Danger Zone',       icon: '⚠' },
+  const sections: { key: Section; label: string; icon: React.ReactNode }[] = [
+    { key: 'profile',  label: 'Profile Info', icon: <PersonIcon /> },
+    { key: 'security', label: 'Security',     icon: <LockIcon /> },
+    ...(isDesigner ? [{ key: 'designer' as Section, label: 'Designer', icon: <BrushIcon /> }] : []),
+    { key: 'danger',   label: 'Danger Zone',  icon: <AlertTriangleIcon /> },
   ]
 
   const SaveBtn = ({ onClick, label }: { onClick: () => void; label: string }) => (
@@ -372,7 +430,7 @@ export default function ProfileSettings({ onClose }: Props) {
                       }}>
                         {(avatarPreview || avatarUrl)
                           ? <img src={avatarPreview || avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ color: S.gold, fontSize: 28 }}>◉</span>}
+                          : <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={S.gold} strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>}
                       </div>
                       <div>
                         <button
@@ -422,9 +480,14 @@ export default function ProfileSettings({ onClose }: Props) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                   <div>
                     <p style={{ margin: '0 0 4px', fontFamily: S.headline, fontWeight: 600, fontSize: 14, color: S.text }}>Change Password</p>
-                    <p style={{ margin: '0 0 4px', fontFamily: S.body, fontSize: 13, color: S.textMuted, lineHeight: 1.6 }}>Use at least 8 characters with a mix of letters and numbers.</p>
+                    <p style={{ margin: '0 0 4px', fontFamily: S.body, fontSize: 13, color: S.textMuted, lineHeight: 1.6 }}>
+                      {isPasswordUser ? 'Enter your current password to set a new one.' : 'You signed in with Google. Set a password to also enable email login.'}
+                    </p>
                   </div>
 
+                  {isPasswordUser && (
+                    <FocusField label="Current Password" value={currentPw} onChange={setCurrentPw} type={showPw ? 'text' : 'password'} placeholder="Your current password" />
+                  )}
                   <FocusField label="New Password" value={newPw} onChange={setNewPw} type={showPw ? 'text' : 'password'} placeholder="Min. 8 characters" />
                   <FocusField label="Confirm New Password" value={confirmPw} onChange={setConfirmPw} type={showPw ? 'text' : 'password'} placeholder="Repeat new password" />
 
@@ -435,10 +498,17 @@ export default function ProfileSettings({ onClose }: Props) {
 
                   <SaveBtn onClick={handleChangePassword} label="Update Password →" />
 
-                  <div style={{ borderTop: `1px solid ${S.borderFaint}`, paddingTop: 18 }}>
-                    <p style={{ margin: '0 0 6px', fontFamily: S.headline, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: S.textFaint }}>Email Address</p>
-                    <p style={{ margin: '0 0 5px', fontFamily: S.body, fontSize: 14, color: S.textMuted }}>{user?.email}</p>
-                    <p style={{ margin: 0, fontFamily: S.body, fontSize: 11, color: S.textFaint }}>To change your email address, contact support.</p>
+                  {/* ── Email change ──────────────────────────────── */}
+                  <div style={{ borderTop: `1px solid ${S.borderFaint}`, paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                      <p style={{ margin: '0 0 4px', fontFamily: S.headline, fontWeight: 600, fontSize: 14, color: S.text }}>Email Address</p>
+                      <p style={{ margin: '0 0 10px', fontFamily: S.body, fontSize: 13, color: S.textMuted }}>Current: <strong style={{ color: S.text }}>{user?.email}</strong></p>
+                    </div>
+                    <FocusField label="New Email Address" value={newEmail} onChange={setNewEmail} type="email" placeholder="Enter new email" />
+                    <SaveBtn onClick={handleEmailChange} label="Update Email →" />
+                    <p style={{ margin: 0, fontFamily: S.body, fontSize: 11, color: S.textFaint, lineHeight: 1.6 }}>
+                      A confirmation link will be sent to your new address. Your email won't change until you click it.
+                    </p>
                   </div>
                 </div>
               )}
