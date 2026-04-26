@@ -112,21 +112,31 @@ export default function Nav({
           onClick={() => { onMarketplace(); close() }}
           style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 8, cursor: 'pointer', flexShrink: 0 }}
         >
-          <img
-            src="/logo.svg"
-            alt=""
-            style={{
-              height:       isMobile ? 58 : (isDark ? 84 : 100),
-              width:        'auto',
-              objectFit:    'contain',
-              display:      'block',
-              flexShrink:   0,
-              background:   isDark ? 'transparent' : '#000',
-              borderRadius: isDark ? 0 : 6,
-              padding:      isDark ? 0 : 3,
-            }}
-            onError={(e: any) => { e.target.style.display = 'none' }}
-          />
+          {/* Logo — wrapper clips SVG internal padding so artwork fills the frame */}
+          <div style={{
+            width:          isDark ? 'auto' : (isMobile ? 48 : 64),
+            height:         isDark ? 'auto' : (isMobile ? 48 : 64),
+            background:     isDark ? 'transparent' : '#000',
+            borderRadius:   isDark ? 0 : 7,
+            overflow:       isDark ? 'visible' : 'hidden',
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            flexShrink:     0,
+          }}>
+            <img
+              src="/logo.svg"
+              alt=""
+              style={{
+                height:     isMobile ? (isDark ? 58 : 76) : (isDark ? 84 : 104),
+                width:      'auto',
+                objectFit:  'contain',
+                display:    'block',
+                flexShrink: 0,
+              }}
+              onError={(e: any) => { e.target.style.display = 'none' }}
+            />
+          </div>
 
           {/* Brand text */}
           <div>
