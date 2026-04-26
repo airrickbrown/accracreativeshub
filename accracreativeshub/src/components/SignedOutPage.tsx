@@ -52,7 +52,7 @@ export default function SignedOutPage({ onLogin, onHomepage }: Props) {
             left:          '50%',
             top:           '50%',
             transform:     'translate(-50%,-50%)',
-            width:         480,
+            width:         580,
             opacity:       0.018,
             pointerEvents: 'none',
             mixBlendMode:  'screen' as any,

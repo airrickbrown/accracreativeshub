@@ -112,24 +112,15 @@ export default function Nav({
           onClick={() => { onMarketplace(); close() }}
           style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 8, cursor: 'pointer', flexShrink: 0 }}
         >
-          {/* 
-            Logo image with black background removed.
-            The SVG/PNG has a black background — we use a combination of:
-            1. mix-blend-mode: screen  → makes black transparent on dark backgrounds
-            2. No border or box around it
-          */}
           <img
             src="/logo.svg"
             alt=""
             style={{
-              height:       isMobile ? 52 : 68,
-              width:        'auto',
-              objectFit:    'contain',
-              display:      'block',
-              flexShrink:   0,
-              // screen: makes black transparent on dark backgrounds
-              // multiply: makes white transparent on light backgrounds
-              mixBlendMode: (isDark ? 'screen' : 'multiply') as any,
+              height:     isMobile ? 64 : 84,
+              width:      'auto',
+              objectFit:  'contain',
+              display:    'block',
+              flexShrink: 0,
             }}
             onError={(e: any) => { e.target.style.display = 'none' }}
           />
