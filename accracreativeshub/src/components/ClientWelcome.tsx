@@ -84,7 +84,7 @@ export default function ClientWelcome({ onBrowse, onMessages }: Props) {
               right:         '-4%',
               top:           '50%',
               transform:     'translateY(-50%)',
-              width:         360,
+              width:         440,
               opacity:       0.025,
               pointerEvents: 'none',
               mixBlendMode:  'screen' as any,
