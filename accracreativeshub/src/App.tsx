@@ -287,7 +287,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ background: S.bg, minHeight: '100dvh', color: S.text, fontFamily: S.body, backgroundImage: kenteUrl, transition: 'background 0.25s' }}>
+    <div style={{ background: S.bg, minHeight: '100dvh', color: S.text, fontFamily: S.body, backgroundImage: kenteUrl, transition: 'background 0.25s', overflowX: 'hidden' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Manrope:wght@200..800&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -427,9 +427,8 @@ export default function App() {
       <Nav {...navProps} />
 
       {/* ── Hero ── */}
-      <section id="hero" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 80, position: 'relative', overflow: 'hidden' }}>
-        <img src="/logo.svg" alt="" style={{ position: 'absolute', right: '6%', top: '50%', transform: 'translateY(-50%)', width: 340, maxWidth: '42vw', opacity: 0.045, pointerEvents: 'none', zIndex: 1 }} />
-        <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
+      <section id="hero" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '80px 0 0', position: 'relative', overflowX: 'hidden' }}>
+        <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', width: '100%', boxSizing: 'border-box', position: 'relative', zIndex: 2 }}>
           <div style={{ animation: heroIn ? 'fadeUp 0.8s ease forwards' : 'none', opacity: heroIn ? 1 : 0 }}>
             <Lbl style={{ marginBottom: 20 }}>The Sovereign Gallery</Lbl>
             <Hl className="hero-title" style={{ fontSize: 'clamp(42px,7vw,80px)', fontWeight: 300, marginBottom: 20, lineHeight: 1.0 }}>
