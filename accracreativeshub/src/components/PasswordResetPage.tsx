@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 
 const RESEND_KEY = (): string => import.meta.env.VITE_RESEND_API_KEY || ''
 const FROM = 'Accra Creatives Hub <noreply@auth.accracreativeshub.com>'
@@ -71,6 +73,7 @@ const sendConfirmationEmail = async (email: string, name: string) => {
 type Stage = 'loading' | 'form' | 'success' | 'invalid'
 
 export default function PasswordResetPage() {
+  const { isDark } = useTheme()
   const [stage, setStage]         = useState<Stage>('loading')
   const [password, setPassword]   = useState('')
   const [confirm, setConfirm]     = useState('')
@@ -149,18 +152,18 @@ export default function PasswordResetPage() {
 
   const container: React.CSSProperties = {
     position: 'fixed', inset: 0, zIndex: 500,
-    background: '#0a0a0a',
+    background: S.bg,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     padding: 20,
   }
 
   const card: React.CSSProperties = {
     width: '100%', maxWidth: 440,
-    background: '#131313',
-    border: '1px solid rgba(201,168,76,0.18)',
+    background: S.surface,
+    border: `1px solid ${S.border}`,
     borderRadius: 16,
     padding: 'clamp(28px, 6vw, 40px) clamp(20px, 6vw, 36px)',
-    boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+    boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.6)' : '0 24px 64px rgba(0,0,0,0.12)',
   }
 
   // ── Loading ──
@@ -185,10 +188,10 @@ export default function PasswordResetPage() {
     <div style={container}>
       <div style={{ ...card, textAlign: 'center' }}>
         <div style={{ color: gold, fontSize: 36, marginBottom: 16 }}>◈</div>
-        <h2 style={{ color: '#f5f5f5', fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 22, margin: '0 0 12px' }}>
+        <h2 style={{ color: S.text, fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 22, margin: '0 0 12px' }}>
           Link expired
         </h2>
-        <p style={{ color: '#888', fontSize: 14, lineHeight: 1.8, margin: '0 0 24px' }}>
+        <p style={{ color: S.textMuted, fontSize: 14, lineHeight: 1.8, margin: '0 0 24px' }}>
           This reset link has expired or already been used.<br />Request a new one from the login page.
         </p>
         <button
@@ -206,15 +209,15 @@ export default function PasswordResetPage() {
     <div style={container}>
       <div style={{ ...card, textAlign: 'center' }}>
         <div style={{ color: '#4ade80', fontSize: 52, marginBottom: 16 }}>✓</div>
-        <h2 style={{ color: '#f5f5f5', fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 24, margin: '0 0 12px' }}>
+        <h2 style={{ color: S.text, fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 24, margin: '0 0 12px' }}>
           Password updated.
         </h2>
-        <p style={{ color: '#888', fontSize: 14, lineHeight: 1.8, margin: '0 0 6px' }}>
+        <p style={{ color: S.textMuted, fontSize: 14, lineHeight: 1.8, margin: '0 0 6px' }}>
           Your password has been changed successfully.
         </p>
-        <p style={{ color: '#555', fontSize: 13, margin: '0 0 24px' }}>
+        <p style={{ color: S.textFaint, fontSize: 13, margin: '0 0 24px' }}>
           A confirmation email was sent to{' '}
-          <strong style={{ color: '#aaa' }}>{userEmail}</strong>.<br />
+          <strong style={{ color: S.textMuted }}>{userEmail}</strong>.<br />
           Redirecting you to login in 3 seconds…
         </p>
         {/* Progress bar */}
@@ -231,10 +234,10 @@ export default function PasswordResetPage() {
     <div style={container}>
       <div style={card}>
         <div style={{ width: 28, height: 2, background: gold, marginBottom: 20 }} />
-        <h2 style={{ color: '#f5f5f5', fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 26, margin: '0 0 8px', lineHeight: 1.2 }}>
+        <h2 style={{ color: S.text, fontFamily: 'Georgia,serif', fontWeight: 400, fontSize: 26, margin: '0 0 8px', lineHeight: 1.2 }}>
           Set new password.
         </h2>
-        <p style={{ color: '#888', fontSize: 13, margin: '0 0 28px', lineHeight: 1.6 }}>
+        <p style={{ color: S.textMuted, fontSize: 13, margin: '0 0 28px', lineHeight: 1.6 }}>
           Hi {userName}, choose a strong new password.
         </p>
 
@@ -242,7 +245,7 @@ export default function PasswordResetPage() {
 
           {/* New password */}
           <div>
-            <p style={{ margin: '0 0 7px', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#555', fontFamily: 'Arial' }}>
+            <p style={{ margin: '0 0 7px', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: S.textFaint, fontFamily: 'Arial' }}>
               New Password
             </p>
             <div style={{ position: 'relative' }}>
@@ -253,15 +256,15 @@ export default function PasswordResetPage() {
                 onChange={e => setPassword(e.target.value)}
                 style={{
                   display: 'block', width: '100%', boxSizing: 'border-box',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${password ? gold : 'rgba(255,255,255,0.09)'}`,
-                  borderRadius: 10, color: '#f5f5f5', fontFamily: 'Arial',
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  border: `1px solid ${password ? gold : S.border}`,
+                  borderRadius: 10, color: S.text, fontFamily: 'Arial',
                   fontSize: 16, padding: '15px 52px 15px 16px', outline: 'none', minHeight: 52,
                 }}
               />
               <button
                 onClick={() => setShowPw(v => !v)}
-                style={{ all: 'unset', position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#555', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'Arial' }}
+                style={{ all: 'unset', position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: S.textFaint, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'Arial' }}
               >
                 {showPw ? 'Hide' : 'Show'}
               </button>
@@ -272,7 +275,7 @@ export default function PasswordResetPage() {
               <div style={{ marginTop: 8 }}>
                 <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
                   {[1,2,3,4].map(n => (
-                    <div key={n} style={{ flex: 1, height: 3, borderRadius: 99, background: strength >= n ? strengthColor : 'rgba(255,255,255,0.08)', transition: 'background 0.2s' }} />
+                    <div key={n} style={{ flex: 1, height: 3, borderRadius: 99, background: strength >= n ? strengthColor : S.borderFaint, transition: 'background 0.2s' }} />
                   ))}
                 </div>
                 <p style={{ margin: 0, fontSize: 11, color: strengthColor, fontFamily: 'Arial' }}>
@@ -284,7 +287,7 @@ export default function PasswordResetPage() {
 
           {/* Confirm password */}
           <div>
-            <p style={{ margin: '0 0 7px', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#555', fontFamily: 'Arial' }}>
+            <p style={{ margin: '0 0 7px', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: S.textFaint, fontFamily: 'Arial' }}>
               Confirm Password
             </p>
             <input
@@ -295,13 +298,13 @@ export default function PasswordResetPage() {
               onKeyDown={e => e.key === 'Enter' && handleReset()}
               style={{
                 display: 'block', width: '100%', boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.05)',
+                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
                 border: `1px solid ${
                   confirm && confirm === password ? 'rgba(74,154,74,0.6)' :
                   confirm && confirm !== password ? 'rgba(239,68,68,0.6)' :
-                  'rgba(255,255,255,0.09)'
+                  S.border
                 }`,
-                borderRadius: 10, color: '#f5f5f5', fontFamily: 'Arial',
+                borderRadius: 10, color: S.text, fontFamily: 'Arial',
                 fontSize: 16, padding: '15px 16px', outline: 'none', minHeight: 52,
               }}
             />

@@ -116,11 +116,14 @@ export default function Nav({
             src="/logo.svg"
             alt=""
             style={{
-              height:     isMobile ? 64 : 84,
-              width:      'auto',
-              objectFit:  'contain',
-              display:    'block',
-              flexShrink: 0,
+              height:       isMobile ? 64 : 84,
+              width:        'auto',
+              objectFit:    'contain',
+              display:      'block',
+              flexShrink:   0,
+              background:   isDark ? 'transparent' : '#000',
+              borderRadius: isDark ? 0 : 6,
+              padding:      isDark ? 0 : 3,
             }}
             onError={(e: any) => { e.target.style.display = 'none' }}
           />

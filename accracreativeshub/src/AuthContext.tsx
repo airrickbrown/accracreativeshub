@@ -135,9 +135,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem('ach_adm_ok')
     } catch { /* ignore */ }
     window.history.replaceState({}, '', '/')
-    // Clean up async in background — don't await
     supabase.removeAllChannels().catch(() => {})
-    supabase.auth.signOut().catch(() => {})
+    await supabase.auth.signOut().catch(() => {})
   }
 
   const deleteAccount = async (name?: string) => {

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 import { Btn, Hl, Body, Lbl } from './UI'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
@@ -208,6 +209,7 @@ const TextAreaField = ({ label, value, onChange, placeholder, rows = 4 }: {
 
 export default function BriefBuilder({ designer, onClose, onOrderCreated }: Props) {
   const { user } = useAuth()
+  useTheme() // subscribe to theme so S tokens update on toggle
 
   const designerCategories = getDesignerCategories(designer)
   const defaultCategory    = designerCategories.length === 1 ? designerCategories[0] : ''
@@ -310,7 +312,7 @@ export default function BriefBuilder({ designer, onClose, onOrderCreated }: Prop
 
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300,
-        background: '#111114',
+        background: S.surface,
         border: '1px solid rgba(201,168,76,0.14)',
         borderRadius: '20px 20px 0 0',
         maxHeight: '96dvh',
@@ -550,7 +552,7 @@ export default function BriefBuilder({ designer, onClose, onOrderCreated }: Prop
           padding: 'clamp(14px,4vw,20px) clamp(20px,5vw,28px)',
           borderTop: `1px solid ${S.borderFaint}`,
           display: 'flex', gap: 10, flexShrink: 0,
-          background: '#111114',
+          background: S.surface,
         }}>
           {step > 1
             ? <Btn variant="ghost" onClick={() => { setError(''); setStep(s => (s - 1) as any) }} full>← Back</Btn>

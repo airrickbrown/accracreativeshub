@@ -478,7 +478,7 @@ export default function App() {
       <section style={{ background: S.surface, padding: '32px 40px', borderTop: `1px solid ${S.borderFaint}`, borderBottom: `1px solid ${S.borderFaint}` }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
-            <img src="/logo.svg" alt="" style={{ width: 27, height: 27, objectFit: 'contain' }} />
+            <img src="/logo.svg" alt="" style={{ width: 27, height: 27, objectFit: 'contain', background: isDark ? 'transparent' : '#000', borderRadius: isDark ? 0 : 4 }} />
             <Lbl style={{ margin: 0, color: S.gold }}>Platform Overview</Lbl>
           </div>
           <div className="platform-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: S.borderFaint }}>
@@ -680,7 +680,7 @@ export default function App() {
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <img src="/logo.svg" alt="" style={{ height: 44, width: 'auto', objectFit: 'contain' }} />
+                <img src="/logo.svg" alt="" style={{ height: 44, width: 'auto', objectFit: 'contain', background: isDark ? 'transparent' : '#000', borderRadius: isDark ? 0 : 6, padding: isDark ? 0 : 3 }} />
                 <Hl style={{ fontSize: 16, fontWeight: 700, color: S.gold, letterSpacing: '-0.02em', marginBottom: 0, lineHeight: 1 }}>ACCRA CREATIVES HUB</Hl>
               </div>
               <Body style={{ fontSize: 12, maxWidth: 280, lineHeight: 1.9, marginBottom: 8 }}>{COPY.footer.tagline}</Body>

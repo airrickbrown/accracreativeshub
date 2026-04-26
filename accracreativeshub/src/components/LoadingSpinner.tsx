@@ -62,6 +62,7 @@ export function LoadingSpinner({ message, fullPage = false, size = 'md' }: Spinn
 // ── NotFoundPage ────────────────────────────────────────────
 
 export function NotFoundPage({ onHome }: { onHome?: () => void }) {
+  useTheme() // subscribe to theme so S tokens update on toggle
   const [offline, setOffline] = useState(!navigator.onLine)
 
   useEffect(() => {
@@ -77,7 +78,7 @@ export function NotFoundPage({ onHome }: { onHome?: () => void }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#080808',
+      position: 'fixed', inset: 0, background: S.bg,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       padding: 'clamp(24px,6vw,48px)', textAlign: 'center',

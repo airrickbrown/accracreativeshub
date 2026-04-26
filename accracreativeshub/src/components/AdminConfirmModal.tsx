@@ -1,6 +1,7 @@
 // ── src/components/AdminConfirmModal.tsx ──
 import React from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 
 export interface ConfirmConfig {
   title:      string
@@ -22,6 +23,7 @@ const VARIANT_STYLES = {
 }
 
 export default function AdminConfirmModal({ config, onCancel }: Props) {
+  useTheme() // subscribe to theme so S tokens update on toggle
   const variant = config.variant ?? 'danger'
   const vs = VARIANT_STYLES[variant]
 
@@ -42,7 +44,7 @@ export default function AdminConfirmModal({ config, onCancel }: Props) {
     >
       <div
         style={{
-          background:   '#111',
+          background:   S.surface,
           border:       `1px solid ${S.border}`,
           borderRadius: 12,
           padding:      '32px 28px',
@@ -58,7 +60,7 @@ export default function AdminConfirmModal({ config, onCancel }: Props) {
           fontFamily:    S.headline,
           fontSize:      18,
           fontWeight:    600,
-          color:         '#f0f0f0',
+          color:         S.text,
           marginBottom:  10,
           lineHeight:    1.3,
         }}>
@@ -68,7 +70,7 @@ export default function AdminConfirmModal({ config, onCancel }: Props) {
         <div style={{
           fontFamily:   S.body,
           fontSize:     13,
-          color:        '#999',
+          color:        S.textMuted,
           lineHeight:   1.7,
           marginBottom: 28,
         }}>

@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 import { supabase } from '../lib/supabase'
 import { upsertProfile } from '../lib/auth'
 
@@ -33,6 +34,7 @@ const STYLES = `
 `
 
 export default function GoogleRoleModal({ user, onComplete }: Props) {
+  useTheme() // subscribe to theme so S tokens update on toggle
   const fullName    = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'
   const hintRole    = (() => { try { return localStorage.getItem('ach_oauth_role_hint') as 'client' | 'designer' | null } catch { return null } })()
 
@@ -84,7 +86,7 @@ export default function GoogleRoleModal({ user, onComplete }: Props) {
       <style>{STYLES}</style>
       <div style={{ position: 'fixed', inset: 0, zIndex: 290, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(14px)' }} />
 
-      <div className="grm grm-sheet" style={{ zIndex: 300, background: '#111114', border: '1px solid rgba(201,168,76,0.14)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflowY: 'auto', padding: '32px 28px 40px' }}>
+      <div className="grm grm-sheet" style={{ zIndex: 300, background: S.surface, border: '1px solid rgba(201,168,76,0.14)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflowY: 'auto', padding: '32px 28px 40px' }}>
 
         {/* Google avatar row */}
         {user?.user_metadata?.avatar_url && (

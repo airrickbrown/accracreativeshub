@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 import { Hl, Body, Lbl } from './UI'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../AuthContext'
@@ -67,6 +68,7 @@ const CLAUSES = [
 
 export default function DesignerAgreementModal({ onAccept }: Props) {
   const { user } = useAuth()
+  useTheme() // subscribe to theme so S tokens update on toggle
   const [isMobile, setIsMobile]               = useState(false)
   const [scrolledToBottom, setScrolledToBottom] = useState(false)
   const [agreed, setAgreed]                   = useState(false)
@@ -112,7 +114,7 @@ export default function DesignerAgreementModal({ onAccept }: Props) {
   const modalStyle: React.CSSProperties = isMobile
     ? {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 500,
-        background: '#111114',
+        background: S.surface,
         border: '1px solid rgba(201,168,76,0.14)',
         borderRadius: '20px 20px 0 0',
         maxHeight: '96dvh',
@@ -122,7 +124,7 @@ export default function DesignerAgreementModal({ onAccept }: Props) {
     : {
         position: 'fixed', top: '50%', left: '50%', zIndex: 500,
         transform: 'translate(-50%,-50%)',
-        background: '#111114',
+        background: S.surface,
         border: '1px solid rgba(201,168,76,0.14)',
         borderRadius: 16,
         width: '100%', maxWidth: 600, maxHeight: '90vh',
@@ -223,7 +225,7 @@ export default function DesignerAgreementModal({ onAccept }: Props) {
           padding: isMobile ? '14px 20px 28px' : '16px 28px 28px',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           flexShrink: 0,
-          background: '#111114',
+          background: S.surface,
         }}>
           {/* Checkbox */}
           <label style={{

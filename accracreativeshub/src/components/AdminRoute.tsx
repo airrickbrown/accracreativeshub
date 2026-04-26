@@ -7,6 +7,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../AuthContext'
 import { S } from '../styles/tokens'
+import { useTheme } from '../ThemeContext'
 import AdminPanel from './AdminPanel'
 
 interface Props { onClose: () => void }
@@ -17,6 +18,7 @@ const SESSION_KEY = 'ach_adm_ok'
 
 export default function AdminRoute({ onClose }: Props) {
   const { user, loading } = useAuth()
+  const { isDark } = useTheme()
 
   const [pinInput,    setPinInput]    = useState('')
   const [pinError,    setPinError]    = useState('')
@@ -29,7 +31,7 @@ export default function AdminRoute({ onClose }: Props) {
   if (loading) {
     return (
       <div style={{
-        position: 'fixed', inset: 0, background: '#080808',
+        position: 'fixed', inset: 0, background: S.bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -73,13 +75,13 @@ export default function AdminRoute({ onClose }: Props) {
 
     return (
       <div style={{
-        position: 'fixed', inset: 0, background: '#080808',
+        position: 'fixed', inset: 0, background: S.bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24,
       }}>
         <div style={{
-          background: '#131313',
-          border: '1px solid rgba(201,168,76,0.18)',
+          background: S.surface,
+          border: `1px solid ${S.border}`,
           borderRadius: 14,
           padding: '36px 32px',
           maxWidth: 380, width: '100%',
@@ -115,8 +117,8 @@ export default function AdminRoute({ onClose }: Props) {
               autoFocus
               style={{
                 display: 'block', width: '100%', boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.05)',
-                border: `1px solid ${pinError ? 'rgba(220,85,85,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                border: `1px solid ${pinError ? 'rgba(220,85,85,0.5)' : S.border}`,
                 borderRadius: 10, color: S.text,
                 fontFamily: "'Manrope', Arial, sans-serif", fontSize: 16,
                 padding: '14px 16px', outline: 'none',
@@ -167,7 +169,7 @@ export default function AdminRoute({ onClose }: Props) {
             onClick={onClose}
             style={{
               display: 'block', width: '100%', background: 'none',
-              border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+              border: `1px solid ${S.borderFaint}`, borderRadius: 10,
               fontFamily: "'Manrope', Arial, sans-serif", fontSize: 11,
               letterSpacing: '0.16em', textTransform: 'uppercase',
               color: S.textMuted, padding: '13px', cursor: 'pointer',
@@ -188,7 +190,7 @@ export default function AdminRoute({ onClose }: Props) {
 function Denied({ message, onClose }: { message: string; onClose: () => void }) {
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#080808',
+      position: 'fixed', inset: 0, background: S.bg,
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       fontFamily: "'Newsreader', Georgia, serif", padding: 24,
